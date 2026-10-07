@@ -18,27 +18,47 @@ class TodayViewScreen extends ConsumerWidget {
     final activeGroup = ref.watch(activeGroupProvider);
     final isEditor = ref.watch(isEditorModeProvider);
     final attendanceState = ref.watch(attendanceProvider);
+    final todayOverride = ref.watch(todayOverrideProvider);
 
     final todayDate = IstClock.todayDateString();
     final weekday = IstClock.weekdayName();
 
     return Scaffold(
       appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              page?.title ?? 'Class Timetable',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            Text(
-              '$weekday, $todayDate',
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-            ),
-          ],
+        title: InkWell(
+          onTap: isEditor ? () => _showEditPageDialog(context, ref, page) : null,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    page?.title ?? 'Class Timetable',
+                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                  ),
+                  if (isEditor) ...[
+                    const SizedBox(width: 4),
+                    const Icon(Icons.edit, size: 14, color: AppTheme.primaryBlue),
+                  ],
+                ],
+              ),
+              Text(
+                '$weekday, $todayDate',
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              ),
+            ],
+          ),
         ),
         actions: [
-          // CR Mode Switcher chip for testability
+          // Day Override Action for CR
+          if (isEditor)
+            IconButton(
+              icon: const Icon(Icons.rule_folder_outlined),
+              tooltip: 'Set Day Override',
+              onPressed: () => _showDayOverrideDialog(context, ref, todayOverride),
+            ),
+
+          // CR Mode Switcher chip
           Container(
             margin: const EdgeInsets.only(right: 8),
             child: FilterChip(
@@ -67,6 +87,63 @@ class TodayViewScreen extends ConsumerWidget {
       ),
       body: CustomScrollView(
         slivers: [
+          // Day Override Banner if active
+          if (todayOverride != null)
+            SliverToBoxAdapter(
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: todayOverride.isNoClasses ? const Color(0xFFFEF2F2) : const Color(0xFFFFFBEB),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: todayOverride.isNoClasses ? const Color(0xFFFCA5A5) : const Color(0xFFFCD34D),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      todayOverride.isNoClasses ? Icons.event_busy : Icons.swap_horiz,
+                      color: todayOverride.isNoClasses ? Colors.red : Colors.amber.shade800,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            todayOverride.isNoClasses
+                                ? 'No Classes Today'
+                                : 'Timetable Override: Follows ${todayOverride.followsWeekday} Schedule',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              color: todayOverride.isNoClasses ? Colors.red.shade900 : Colors.amber.shade900,
+                            ),
+                          ),
+                          if (todayOverride.note != null && todayOverride.note!.isNotEmpty)
+                            Text(
+                              todayOverride.note!,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: todayOverride.isNoClasses ? Colors.red.shade800 : Colors.amber.shade800,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    if (isEditor)
+                      IconButton(
+                        icon: const Icon(Icons.close, size: 18),
+                        onPressed: () {
+                          ref.read(todayOverrideProvider.notifier).clearOverride();
+                        },
+                      ),
+                  ],
+                ),
+              ),
+            ),
+
           // Group Selection Header
           SliverToBoxAdapter(
             child: Container(
@@ -122,12 +199,15 @@ class TodayViewScreen extends ConsumerWidget {
                         Icon(Icons.weekend_outlined, size: 56, color: Colors.grey.shade400),
                         const SizedBox(height: 12),
                         Text(
-                          'No classes scheduled for $weekday',
+                          todayOverride?.isNoClasses ?? false
+                              ? 'All classes cancelled today by day override'
+                              : 'No classes scheduled for $weekday',
                           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.grey.shade700),
+                          textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Enjoy your free day!',
+                          'Enjoy your free time!',
                           style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
                         ),
                       ],
@@ -521,6 +601,139 @@ class TodayViewScreen extends ConsumerWidget {
               ),
             );
           },
+        );
+      },
+    );
+  }
+
+  void _showDayOverrideDialog(BuildContext context, WidgetRef ref, DayOverride? current) {
+    bool isNoClass = current?.isNoClasses ?? false;
+    String followsDay = current?.followsWeekday ?? 'FRIDAY';
+    final noteCtrl = TextEditingController(text: current?.note ?? '');
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (dCtx, setDialogState) {
+            return AlertDialog(
+              title: const Text('Set Day Override'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SwitchListTile(
+                    title: const Text('No Classes Today (Holiday)'),
+                    value: isNoClass,
+                    onChanged: (val) {
+                      setDialogState(() => isNoClass = val);
+                    },
+                  ),
+                  if (!isNoClass) ...[
+                    const SizedBox(height: 10),
+                    DropdownButtonFormField<String>(
+                      initialValue: followsDay,
+                      decoration: const InputDecoration(labelText: 'Follows Schedule Of'),
+                      items: const [
+                        DropdownMenuItem(value: 'MONDAY', child: Text('Monday')),
+                        DropdownMenuItem(value: 'TUESDAY', child: Text('Tuesday')),
+                        DropdownMenuItem(value: 'WEDNESDAY', child: Text('Wednesday')),
+                        DropdownMenuItem(value: 'THURSDAY', child: Text('Thursday')),
+                        DropdownMenuItem(value: 'FRIDAY', child: Text('Friday')),
+                        DropdownMenuItem(value: 'SATURDAY', child: Text('Saturday')),
+                      ],
+                      onChanged: (val) {
+                        if (val != null) setDialogState(() => followsDay = val);
+                      },
+                    ),
+                  ],
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: noteCtrl,
+                    decoration: const InputDecoration(labelText: 'Reason / Note'),
+                  ),
+                ],
+              ),
+              actions: [
+                if (current != null)
+                  TextButton(
+                    onPressed: () {
+                      ref.read(todayOverrideProvider.notifier).clearOverride();
+                      Navigator.pop(dCtx);
+                    },
+                    child: const Text('Clear Override', style: TextStyle(color: Colors.red)),
+                  ),
+                TextButton(onPressed: () => Navigator.pop(dCtx), child: const Text('Cancel')),
+                ElevatedButton(
+                  onPressed: () async {
+                    await ref.read(todayOverrideProvider.notifier).setOverride(
+                          isNoClasses: isNoClass,
+                          followsWeekday: isNoClass ? null : followsDay,
+                          note: noteCtrl.text.trim().isNotEmpty ? noteCtrl.text.trim() : null,
+                        );
+                    if (context.mounted) Navigator.pop(dCtx);
+                  },
+                  child: const Text('Apply Override'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showEditPageDialog(BuildContext context, WidgetRef ref, ClassPage? page) {
+    final collegeCtrl = TextEditingController(text: page?.college ?? '');
+    final deptCtrl = TextEditingController(text: page?.department ?? '');
+    final yearCtrl = TextEditingController(text: page?.year ?? '');
+    final secCtrl = TextEditingController(text: page?.section ?? '');
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text('Edit Class Page Details'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(controller: collegeCtrl, decoration: const InputDecoration(labelText: 'College Name')),
+                const SizedBox(height: 10),
+                TextField(controller: deptCtrl, decoration: const InputDecoration(labelText: 'Department')),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(child: TextField(controller: yearCtrl, decoration: const InputDecoration(labelText: 'Year'))),
+                    const SizedBox(width: 10),
+                    Expanded(child: TextField(controller: secCtrl, decoration: const InputDecoration(labelText: 'Section'))),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () async {
+                if (page != null) {
+                  final updated = ClassPage(
+                    id: page.id,
+                    college: collegeCtrl.text.trim(),
+                    department: deptCtrl.text.trim(),
+                    year: yearCtrl.text.trim(),
+                    section: secCtrl.text.trim(),
+                    createdBy: page.createdBy,
+                    createdByName: page.createdByName,
+                    editors: page.editors,
+                    availableGroups: page.availableGroups,
+                  );
+                  await ref.read(currentPageProvider.notifier).updatePage(updated);
+                }
+                if (context.mounted) Navigator.pop(ctx);
+              },
+              child: const Text('Save Details'),
+            ),
+          ],
         );
       },
     );

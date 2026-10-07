@@ -261,6 +261,40 @@ class TimetableEntriesNotifier extends Notifier<List<TimetableEntry>> {
 
 final timetableEntriesProvider = NotifierProvider<TimetableEntriesNotifier, List<TimetableEntry>>(TimetableEntriesNotifier.new);
 
+// --- Today's Day Override Provider ---
+class TodayOverrideNotifier extends Notifier<DayOverride?> {
+  @override
+  DayOverride? build() {
+    final today = IstClock.todayDateString();
+    return ref.watch(storageProvider).getDayOverride(today);
+  }
+
+  Future<void> setOverride({
+    required bool isNoClasses,
+    String? followsWeekday,
+    String? note,
+  }) async {
+    final today = IstClock.todayDateString();
+    final override = DayOverride(
+      date: today,
+      isNoClasses: isNoClasses,
+      followsWeekday: followsWeekday,
+      note: note,
+    );
+    await ref.read(storageProvider).saveDayOverride(override);
+    state = override;
+  }
+
+  Future<void> clearOverride() async {
+    final today = IstClock.todayDateString();
+    final cleared = DayOverride(date: today, isNoClasses: false);
+    await ref.read(storageProvider).saveDayOverride(cleared);
+    state = null;
+  }
+}
+
+final todayOverrideProvider = NotifierProvider<TodayOverrideNotifier, DayOverride?>(TodayOverrideNotifier.new);
+
 // --- Today's Class Statuses Provider ---
 class TodayStatusesNotifier extends Notifier<Map<String, ClassStatus>> {
   @override
@@ -314,15 +348,23 @@ class LiveClassItem {
   String get effectiveEndTime => status?.updatedEndTime ?? entry.endTime;
 }
 
-// --- Today's Computed Schedule Provider ---
+// --- Today's Computed Schedule Provider (Considers Day Overrides) ---
 final todayScheduleProvider = Provider<List<LiveClassItem>>((ref) {
-  final weekday = IstClock.weekdayName();
+  final override = ref.watch(todayOverrideProvider);
+  if (override != null && override.isNoClasses) {
+    return [];
+  }
+
+  final targetWeekday = (override?.followsWeekday != null && override!.followsWeekday!.isNotEmpty)
+      ? override.followsWeekday!.toUpperCase()
+      : IstClock.weekdayName();
+
   final entries = ref.watch(timetableEntriesProvider);
   final activeGroup = ref.watch(activeGroupProvider);
   final statuses = ref.watch(todayStatusesProvider);
 
-  // Filter entries for today's weekday
-  final dayEntries = entries.where((e) => e.day == weekday).toList();
+  // Filter entries for target weekday
+  final dayEntries = entries.where((e) => e.day == targetWeekday).toList();
 
   // Filter by active group: classes for 'All' or user's specific group
   final filtered = dayEntries.where((e) {

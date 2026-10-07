@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rostraai/core/utils/ist_clock.dart';
 import 'package:rostraai/features/attendance/attendance_calculator.dart';
+import 'package:rostraai/features/timetable/timetable_providers.dart';
 import 'package:rostraai/models/timetable_models.dart';
 
 void main() {
@@ -81,6 +82,67 @@ void main() {
       expect(revived.status, ClassStatusType.cancelled);
       expect(revived.note, 'Sir on leave');
       expect(revived.updatedByName, 'Sumit (CR)');
+    });
+
+    test('DayOverride serializes and deserializes accurately', () {
+      const override = DayOverride(
+        date: '2026-10-07',
+        isNoClasses: false,
+        followsWeekday: 'FRIDAY',
+        note: 'Swapped due to technical symposium',
+      );
+
+      final map = override.toMap();
+      final revived = DayOverride.fromMap(map);
+
+      expect(revived.date, '2026-10-07');
+      expect(revived.isNoClasses, isFalse);
+      expect(revived.followsWeekday, 'FRIDAY');
+      expect(revived.note, 'Swapped due to technical symposium');
+    });
+
+    test('LiveClassItem accurately reflects effective room and cancellation state', () {
+      const entry = TimetableEntry(
+        id: 'slot-1',
+        day: 'MONDAY',
+        startTime: '09:00',
+        endTime: '10:00',
+        subject: 'Operating Systems',
+        room: 'TP-301',
+        teacher: 'Dr. Anita Verma',
+      );
+
+      // Normal state
+      final normalItem = LiveClassItem(entry: entry);
+      expect(normalItem.isCancelled, isFalse);
+      expect(normalItem.effectiveRoom, 'TP-301');
+
+      // Moved state
+      final movedItem = LiveClassItem(
+        entry: entry,
+        status: const ClassStatus(
+          entryId: 'slot-1',
+          status: ClassStatusType.roomMoved,
+          updatedRoom: 'TP-502',
+          updatedAt: '2026-10-07T08:00:00Z',
+          updatedByName: 'Sumit (CR)',
+        ),
+      );
+      expect(movedItem.isRoomMoved, isTrue);
+      expect(movedItem.effectiveRoom, 'TP-502');
+
+      // Cancelled state
+      final cancelledItem = LiveClassItem(
+        entry: entry,
+        status: const ClassStatus(
+          entryId: 'slot-1',
+          status: ClassStatusType.cancelled,
+          note: 'Faculty unwell',
+          updatedAt: '2026-10-07T08:00:00Z',
+          updatedByName: 'Sumit (CR)',
+        ),
+      );
+      expect(cancelledItem.isCancelled, isTrue);
     });
   });
 }

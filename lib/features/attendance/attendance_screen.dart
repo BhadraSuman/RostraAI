@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_theme.dart';
+import '../timetable/timetable_providers.dart';
 import 'attendance_calculator.dart';
 
 class AttendanceScreen extends ConsumerWidget {
@@ -10,6 +11,13 @@ class AttendanceScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(attendanceProvider);
     final notifier = ref.read(attendanceProvider.notifier);
+    final todaySchedule = ref.watch(todayScheduleProvider);
+
+    // Identify subjects cancelled today by the CR
+    final cancelledSubjectsToday = todaySchedule
+        .where((item) => item.isCancelled)
+        .map((item) => item.entry.subject.toLowerCase())
+        .toSet();
 
     return Scaffold(
       appBar: AppBar(
@@ -73,6 +81,7 @@ class AttendanceScreen extends ConsumerWidget {
           ...state.records.values.map((record) {
             final margin = calculateAttendanceMargin(record.attended, record.held, state.targetPercent);
             final isSafe = margin >= 0;
+            final isCancelledToday = cancelledSubjectsToday.contains(record.subject.toLowerCase());
 
             return Card(
               margin: const EdgeInsets.only(bottom: 12),
@@ -107,6 +116,30 @@ class AttendanceScreen extends ConsumerWidget {
                         ),
                       ],
                     ),
+
+                    if (isCancelledToday) ...[
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFEF2F2),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: const Color(0xFFFCA5A5)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.check_circle_outline, size: 13, color: AppTheme.statusCancelled),
+                            const SizedBox(width: 4),
+                            Text(
+                              "Cancelled today by CR (excluded from held classes)",
+                              style: TextStyle(fontSize: 11, color: Colors.red.shade900, fontWeight: FontWeight.w500),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+
                     const SizedBox(height: 10),
 
                     // Progress Bar
