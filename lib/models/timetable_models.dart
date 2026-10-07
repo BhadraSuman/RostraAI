@@ -257,3 +257,59 @@ class DayOverride {
     );
   }
 }
+
+class ClassComment {
+  final String id;
+  final String classDate; // YYYY-MM-DD
+  final String entryId;
+  final String authorId;
+  final String authorName;
+  final bool isEditor;
+  final String text;
+  final String createdAt;
+  final String expiresAt; // Midnight IST UTC ISO
+  final bool isReported;
+
+  const ClassComment({
+    required this.id,
+    required this.classDate,
+    required this.entryId,
+    required this.authorId,
+    required this.authorName,
+    this.isEditor = false,
+    required this.text,
+    required this.createdAt,
+    required this.expiresAt,
+    this.isReported = false,
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'classDate': classDate,
+      'entryId': entryId,
+      'authorId': authorId,
+      'authorName': authorName,
+      'isEditor': isEditor,
+      'text': text,
+      'createdAt': createdAt,
+      'expiresAt': expiresAt,
+      'isReported': isReported,
+    };
+  }
+
+  factory ClassComment.fromMap(Map<String, dynamic> map) {
+    return ClassComment(
+      id: map['id'] as String? ?? '',
+      classDate: map['classDate'] as String? ?? '',
+      entryId: map['entryId'] as String? ?? '',
+      authorId: map['authorId'] as String? ?? '',
+      authorName: map['authorName'] as String? ?? '',
+      isEditor: map['isEditor'] as bool? ?? false,
+      text: map['text'] as String? ?? '',
+      createdAt: map['createdAt'] as String? ?? '',
+      expiresAt: map['expiresAt'] as String? ?? '',
+      isReported: map['isReported'] as bool? ?? false,
+    );
+  }
+}

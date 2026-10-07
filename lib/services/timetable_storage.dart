@@ -125,4 +125,120 @@ class TimetableStorage {
       json.encode(override.toMap()),
     );
   }
+
+  // --- Terms of Use Acceptance ---
+  static const String _keyTermsAccepted = 'rostraai_terms_accepted_for_comments';
+  bool hasAcceptedTerms() {
+    return _prefs.getBool(_keyTermsAccepted) ?? false;
+  }
+
+  Future<void> acceptTerms() async {
+    await _prefs.setBool(_keyTermsAccepted, true);
+  }
+
+  // --- Google Sign-in Mock/State ---
+  static const String _keyCurrentUserId = 'rostraai_user_id';
+  static const String _keyCurrentUserName = 'rostraai_user_display_name';
+
+  bool isSignedIn() {
+    return _prefs.getString(_keyCurrentUserId) != null;
+  }
+
+  String getCurrentUserId() {
+    return _prefs.getString(_keyCurrentUserId) ?? 'anon-student-1';
+  }
+
+  String getCurrentUserName() {
+    return _prefs.getString(_keyCurrentUserName) ?? 'Student';
+  }
+
+  Future<void> signInWithGoogle({required String userId, required String displayName}) async {
+    await _prefs.setString(_keyCurrentUserId, userId);
+    await _prefs.setString(_keyCurrentUserName, displayName);
+  }
+
+  // --- Moderation & Blocklist ---
+  Set<String> getBlockedUsers() {
+    final list = _prefs.getStringList(AppConstants.keyBlockedUsers);
+    return list != null ? list.toSet() : <String>{};
+  }
+
+  Future<void> blockUser(String userId) async {
+    final current = getBlockedUsers();
+    current.add(userId);
+    await _prefs.setStringList(AppConstants.keyBlockedUsers, current.toList());
+  }
+
+  Future<void> unblockUser(String userId) async {
+    final current = getBlockedUsers();
+    current.remove(userId);
+    await _prefs.setStringList(AppConstants.keyBlockedUsers, current.toList());
+  }
+
+  // --- Comments Storage ---
+  static const String _keyCommentsPrefix = 'rostraai_comments_';
+
+  List<ClassComment> getComments({required String date, required String entryId}) {
+    final raw = _prefs.getString('$_keyCommentsPrefix${date}_$entryId');
+    if (raw == null) return [];
+    final list = json.decode(raw) as List<dynamic>;
+    final allComments = list.map((m) => ClassComment.fromMap(m as Map<String, dynamic>)).toList();
+
+    final blocked = getBlockedUsers();
+    final nowUtc = DateTime.now().toUtc();
+
+    // Filter: Expiry + Blocklist + Moderation rules
+    return allComments.where((c) {
+      // 1. Expiry filter (midnight IST)
+      try {
+        final exp = DateTime.parse(c.expiresAt);
+        if (nowUtc.isAfter(exp)) return false;
+      } catch (_) {}
+
+      // 2. Block filter
+      if (blocked.contains(c.authorId)) return false;
+
+      // 3. Moderation filter: Reported follower comments are hidden until reviewed.
+      // Reported editor posts stay visible (flagged for review).
+      if (c.isReported && !c.isEditor) return false;
+
+      return true;
+    }).toList();
+  }
+
+  Future<void> saveComments({required String date, required String entryId, required List<ClassComment> comments}) async {
+    final encoded = json.encode(comments.map((c) => c.toMap()).toList());
+    await _prefs.setString('$_keyCommentsPrefix${date}_$entryId', encoded);
+  }
+
+  Future<void> addComment(ClassComment comment) async {
+    final raw = _prefs.getString('$_keyCommentsPrefix${comment.classDate}_${comment.entryId}');
+    final list = raw != null ? (json.decode(raw) as List<dynamic>).map((m) => ClassComment.fromMap(m as Map<String, dynamic>)).toList() : <ClassComment>[];
+    list.add(comment);
+    await saveComments(date: comment.classDate, entryId: comment.entryId, comments: list);
+  }
+
+  Future<void> reportComment({required String date, required String entryId, required String commentId}) async {
+    final raw = _prefs.getString('$_keyCommentsPrefix${date}_$entryId');
+    if (raw == null) return;
+    final list = (json.decode(raw) as List<dynamic>).map((m) => ClassComment.fromMap(m as Map<String, dynamic>)).toList();
+    final updated = list.map((c) {
+      if (c.id == commentId) {
+        return ClassComment(
+          id: c.id,
+          classDate: c.classDate,
+          entryId: c.entryId,
+          authorId: c.authorId,
+          authorName: c.authorName,
+          isEditor: c.isEditor,
+          text: c.text,
+          createdAt: c.createdAt,
+          expiresAt: c.expiresAt,
+          isReported: true,
+        );
+      }
+      return c;
+    }).toList();
+    await saveComments(date: date, entryId: entryId, comments: updated);
+  }
 }
