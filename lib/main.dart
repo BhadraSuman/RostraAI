@@ -4,6 +4,7 @@ import 'core/constants/app_constants.dart';
 import 'core/theme/app_theme.dart';
 import 'features/attendance/attendance_screen.dart';
 import 'features/onboarding/age_gate_screen.dart';
+import 'features/onboarding/join_class_screen.dart';
 import 'features/timetable/timetable_grid_screen.dart';
 import 'features/timetable/timetable_providers.dart';
 import 'features/today/today_view_screen.dart';
@@ -32,12 +33,14 @@ class RostraAIApp extends ConsumerStatefulWidget {
 
 class _RostraAIAppState extends ConsumerState<RostraAIApp> {
   bool _isAgeConfirmed = false;
+  bool _hasJoinedClass = false;
 
   @override
   void initState() {
     super.initState();
     final storage = ref.read(storageProvider);
     _isAgeConfirmed = storage.isAgeConfirmed();
+    _hasJoinedClass = storage.getFollowedPageId() != null;
 
     // Seed default demo class page and sample schedule for instant testing
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -49,25 +52,42 @@ class _RostraAIAppState extends ConsumerState<RostraAIApp> {
       final queryPageId = uri.queryParameters['page_id'] ?? uri.queryParameters['id'];
       if (queryPageId != null && queryPageId.isNotEmpty) {
         await storage.setFollowedPageId(queryPageId);
+        setState(() => _hasJoinedClass = true);
       }
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    Widget activeScreen;
+    if (!_isAgeConfirmed) {
+      activeScreen = AgeGateScreen(
+        onConfirmed: () {
+          ref.read(storageProvider).setAgeConfirmed(true);
+          setState(() => _isAgeConfirmed = true);
+        },
+      );
+    } else if (!_hasJoinedClass) {
+      activeScreen = JoinClassScreen(
+        onClassJoined: () {
+          ref.read(storageProvider).setFollowedPageId('demo-class-101');
+          setState(() => _hasJoinedClass = true);
+        },
+        onBack: () {
+          setState(() => _isAgeConfirmed = false);
+        },
+      );
+    } else {
+      activeScreen = const MainNavigationShell();
+    }
+
     return MaterialApp(
       title: AppConstants.appName,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.light,
-      home: _isAgeConfirmed
-          ? const MainNavigationShell()
-          : AgeGateScreen(
-              onConfirmed: () {
-                setState(() => _isAgeConfirmed = true);
-              },
-            ),
+      home: activeScreen,
     );
   }
 }
@@ -97,23 +117,26 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
+        elevation: 6,
+        backgroundColor: Colors.white,
+        indicatorColor: AppTheme.peachTint,
         onDestinationSelected: (idx) {
           setState(() => _currentIndex = idx);
         },
         destinations: const [
           NavigationDestination(
-            icon: Icon(Icons.today_outlined),
-            selectedIcon: Icon(Icons.today),
+            icon: Icon(Icons.calendar_today_outlined),
+            selectedIcon: Icon(Icons.calendar_today_rounded, color: AppTheme.burntOrange),
             label: 'Today',
           ),
           NavigationDestination(
-            icon: Icon(Icons.calendar_month_outlined),
-            selectedIcon: Icon(Icons.calendar_month),
+            icon: Icon(Icons.calendar_view_week_outlined),
+            selectedIcon: Icon(Icons.calendar_view_week_rounded, color: AppTheme.burntOrange),
             label: 'Timetable',
           ),
           NavigationDestination(
-            icon: Icon(Icons.analytics_outlined),
-            selectedIcon: Icon(Icons.analytics),
+            icon: Icon(Icons.fact_check_outlined),
+            selectedIcon: Icon(Icons.fact_check_rounded, color: AppTheme.burntOrange),
             label: 'Attendance',
           ),
         ],

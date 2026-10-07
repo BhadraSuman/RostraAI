@@ -89,6 +89,7 @@ class TimetableEntriesNotifier extends Notifier<List<TimetableEntry>> {
     required String room,
     required String teacher,
     String group = 'All',
+    String? courseCode,
   }) async {
     final newEntry = TimetableEntry(
       id: const Uuid().v4(),
@@ -99,6 +100,7 @@ class TimetableEntriesNotifier extends Notifier<List<TimetableEntry>> {
       room: room,
       teacher: teacher,
       group: group,
+      courseCode: courseCode,
     );
     state = [...state, newEntry];
     await ref.read(storageProvider).saveEntries(state);

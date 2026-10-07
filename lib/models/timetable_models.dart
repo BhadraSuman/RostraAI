@@ -117,6 +117,7 @@ class TimetableEntry {
   final String room;
   final String teacher;
   final String group; // "All", "B1", "B2", etc.
+  final String? courseCode;
 
   const TimetableEntry({
     required this.id,
@@ -127,6 +128,7 @@ class TimetableEntry {
     required this.room,
     required this.teacher,
     this.group = 'All',
+    this.courseCode,
   });
 
   Map<String, dynamic> toMap() {
@@ -139,6 +141,7 @@ class TimetableEntry {
       'room': room,
       'teacher': teacher,
       'group': group,
+      if (courseCode != null) 'courseCode': courseCode,
     };
   }
 
@@ -152,6 +155,7 @@ class TimetableEntry {
       room: map['room'] as String? ?? '',
       teacher: map['teacher'] as String? ?? '',
       group: map['group'] as String? ?? 'All',
+      courseCode: map['courseCode'] as String?,
     );
   }
 
@@ -164,6 +168,7 @@ class TimetableEntry {
     String? room,
     String? teacher,
     String? group,
+    String? courseCode,
   }) {
     return TimetableEntry(
       id: id ?? this.id,
@@ -174,6 +179,7 @@ class TimetableEntry {
       room: room ?? this.room,
       teacher: teacher ?? this.teacher,
       group: group ?? this.group,
+      courseCode: courseCode ?? this.courseCode,
     );
   }
 }

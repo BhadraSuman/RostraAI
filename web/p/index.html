@@ -2,108 +2,526 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Class Schedule — RostraAI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>CSE 3rd Year - Sec A — Live Timetable | RostraAI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --primary: #1E3A8A;
-      --bg: #F8FAFC;
+      --primary: #C2410C;
+      --primary-hover: #9A3412;
+      --primary-tint: #FFEDD5;
+      --primary-bg: #FFF7ED;
+      --bg: #F5F5F4;
       --card: #FFFFFF;
-      --text: #0F172A;
-      --text-muted: #64748B;
-      --border: #E2E8F0;
-      --cancelled: #EF4444;
-      --normal: #10B981;
-      --moved: #F59E0B;
+      --text-900: #1C1917;
+      --text-700: #44403C;
+      --text-500: #78716C;
+      --text-400: #A8A29E;
+      --border: #E7E5E4;
+      
+      --mint-bg: #ECFDF5;
+      --emerald: #065F46;
+      --blush-bg: #FEF2F2;
+      --oxblood: #991B1B;
+      --red: #DC2626;
+      --sky-bg: #EFF6FF;
+      --navy: #1E40AF;
+      --lilac-bg: #F5F3FF;
+      --plum: #5B21B6;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
-    body { background-color: var(--bg); color: var(--text); padding: 16px; max-width: 540px; margin: 0 auto; }
-    .header { margin-bottom: 20px; }
-    .brand { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-weight: 700; color: var(--primary); font-size: 16px; }
-    .title { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
-    .subtitle { font-size: 14px; color: var(--text-muted); margin-top: 4px; }
-    .banner { background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-    .banner-text { font-size: 13px; color: #1E3A8A; }
-    .cta-btn { display: inline-block; background: var(--primary); color: white; text-decoration: none; font-size: 13px; font-weight: 600; padding: 8px 14px; border-radius: 8px; white-space: nowrap; }
-    .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
-    .time-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 13px; font-weight: 600; color: var(--text-muted); }
-    .badge { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 6px; }
-    .badge.normal { background: #ECFDF5; color: var(--normal); }
-    .badge.cancelled { background: #FEF2F2; color: var(--cancelled); }
-    .badge.moved { background: #FFFBEB; color: var(--moved); }
-    .subject { font-size: 16px; font-weight: 700; color: var(--text); }
-    .subject.cancelled { text-decoration: line-through; color: var(--text-muted); }
-    .details { font-size: 13px; color: var(--text-muted); margin-top: 6px; }
-    .note { margin-top: 10px; background: #FEF2F2; border-left: 3px solid var(--cancelled); padding: 8px 12px; border-radius: 4px; font-size: 12px; color: #991B1B; font-weight: 500; }
-    .footer { text-align: center; margin-top: 28px; font-size: 12px; color: var(--text-muted); padding-bottom: 24px; }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg);
+      color: var(--text-900);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 0;
+    }
+
+    .mobile-container {
+      width: 100%;
+      max-width: 480px;
+      background: #FAFAF9;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      box-shadow: 0 0 24px rgba(0,0,0,0.06);
+    }
+
+    .content-wrap {
+      padding: 20px 18px 100px 18px;
+      flex: 1;
+    }
+
+    /* Top Badges */
+    .top-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .brand-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--primary-bg);
+      border: 1px solid var(--primary-tint);
+      padding: 4px 10px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .brand-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--primary);
+    }
+
+    .webview-badge {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-400);
+      letter-spacing: 0.5px;
+      background: #E7E5E4;
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+
+    /* Header */
+    .cohort-header {
+      margin-bottom: 20px;
+    }
+
+    .cohort-title {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--text-900);
+      letter-spacing: -0.5px;
+    }
+
+    .cohort-subtitle {
+      font-size: 13px;
+      color: var(--text-500);
+      margin-top: 4px;
+      font-weight: 500;
+    }
+
+    .sync-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #059669;
+    }
+
+    .sync-status .live-dot {
+      width: 6px;
+      height: 6px;
+      background: #10B981;
+      border-radius: 50%;
+    }
+
+    /* Section Header */
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      padding-top: 4px;
+    }
+
+    .section-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-500);
+      letter-spacing: 0.5px;
+    }
+
+    .section-count {
+      font-size: 12px;
+      color: var(--text-400);
+    }
+
+    /* Timeline Cards */
+    .timeline-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px 14px 14px 12px;
+      margin-bottom: 12px;
+      display: flex;
+      gap: 12px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stripe {
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 4px;
+    }
+    .stripe.now { background: var(--primary); }
+    .stripe.cancelled { background: var(--red); }
+    .stripe.scheduled { background: #10B981; }
+    .stripe.moved { background: #2563EB; }
+
+    .time-col {
+      width: 60px;
+      flex-shrink: 0;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-700);
+      line-height: 1.3;
+      padding-left: 4px;
+    }
+
+    .time-end {
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--text-400);
+    }
+
+    .card-body {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 4px;
+    }
+
+    .subject-name {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-900);
+      line-height: 1.25;
+    }
+
+    .subject-name.strikethrough {
+      text-decoration: line-through;
+      color: var(--text-400);
+    }
+
+    .status-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      white-space: nowrap;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .badge-now { background: var(--primary-bg); color: var(--primary); }
+    .badge-cancelled { background: var(--blush-bg); color: var(--oxblood); }
+    .badge-scheduled { background: var(--mint-bg); color: var(--emerald); }
+    .badge-moved { background: var(--sky-bg); color: var(--navy); }
+
+    .meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-500);
+      margin-top: 6px;
+    }
+
+    .meta-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .batch-pill {
+      background: #F5F5F4;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-700);
+    }
+
+    /* Notice Banner inside Card */
+    .card-notice {
+      margin-top: 10px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .notice-cancelled {
+      background: var(--blush-bg);
+      color: var(--oxblood);
+      border: 1px solid #FECACA;
+    }
+
+    .notice-moved {
+      background: var(--sky-bg);
+      color: var(--navy);
+      border: 1px solid #BFDBFE;
+    }
+
+    /* Relocation chip */
+    .relocation-box {
+      margin-top: 8px;
+      background: var(--sky-bg);
+      border: 1px solid #BFDBFE;
+      padding: 6px 10px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--navy);
+    }
+
+    /* Break Row */
+    .break-row {
+      background: #F5F5F4;
+      border-radius: 12px;
+      padding: 10px 14px;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: var(--text-700);
+      font-weight: 500;
+    }
+
+    /* Sticky Bottom App CTA Bar */
+    .bottom-cta-bar {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 480px;
+      background: #FFFFFF;
+      border-top: 1px solid var(--border);
+      padding: 12px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      box-shadow: 0 -4px 16px rgba(0,0,0,0.05);
+      z-index: 100;
+    }
+
+    .cta-text-wrap {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .cta-headline {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-900);
+      line-height: 1.25;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .cta-subtext {
+      font-size: 11px;
+      color: var(--text-500);
+      margin-top: 2px;
+    }
+
+    .open-btn {
+      background: var(--primary);
+      color: #FFFFFF;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 10px 18px;
+      border-radius: 12px;
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(194, 65, 12, 0.25);
+    }
+
+    .open-btn:hover {
+      background: var(--primary-hover);
+    }
   </style>
 </head>
 <body>
-  <div class="header">
-    <div class="brand">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-      RostraAI Live Timetable
-    </div>
-    <h1 class="title" id="pageTitle">CSE 3rd Year Sec A</h1>
-    <div class="subtitle" id="pageCollege">SRM Institute of Science and Technology • Today's Schedule</div>
-  </div>
-
-  <div class="banner">
-    <div class="banner-text">
-      <strong>Get changes before you reach the room.</strong> Follow this class with one tap.
-    </div>
-    <a href="#" id="appLink" class="cta-btn">Open in App</a>
-  </div>
-
-  <div id="scheduleContainer">
-    <!-- Sample Rendered Classes -->
-    <div class="card">
-      <div class="time-row">
-        <span>09:00 - 10:00</span>
-        <span class="badge normal">Scheduled</span>
+  <div class="mobile-container">
+    <div class="content-wrap">
+      <!-- Top Meta -->
+      <div class="top-meta">
+        <div class="brand-pill">
+          <span class="brand-dot"></span>
+          <span>RostraAI • Live timetable</span>
+        </div>
+        <span class="webview-badge">WEB VIEW</span>
       </div>
-      <div class="subject">Operating Systems</div>
-      <div class="details">TP-301 • Dr. Anita Verma • All Batches</div>
-    </div>
 
-    <div class="card">
-      <div class="time-row">
-        <span>10:00 - 11:00</span>
-        <span class="badge cancelled">Cancelled</span>
+      <!-- Cohort Header -->
+      <div class="cohort-header">
+        <h1 class="cohort-title" id="pageTitle">CSE 3rd Year - Sec A</h1>
+        <div class="cohort-subtitle" id="pageCollege">SRM Institute • Wed, 7 Oct</div>
+        <div class="sync-status">
+          <span class="live-dot"></span>
+          <span>Updated 2 min ago by Sumit (CR)</span>
+        </div>
       </div>
-      <div class="subject cancelled">Database Management Systems</div>
-      <div class="details">TP-405 • Prof. Rajesh K. • All Batches</div>
-      <div class="note">Sir on leave today — updated by Sumit (CR)</div>
-    </div>
 
-    <div class="card">
-      <div class="time-row">
-        <span>11:15 - 13:00</span>
-        <span class="badge normal">Scheduled</span>
+      <!-- Section Title -->
+      <div class="section-header">
+        <span class="section-title">TODAY'S TIMELINE</span>
+        <span class="section-count">4 classes today</span>
       </div>
-      <div class="subject">DBMS Lab (Batch 1)</div>
-      <div class="details">Lab 2 • Prof. Rajesh K. • Batch B1</div>
-    </div>
-  </div>
 
-  <div class="footer">
-    Live updates managed by your Class Representative.<br>
-    Powered by <strong>RostraAI</strong>
+      <!-- Schedule Cards -->
+      <div id="scheduleContainer">
+        <!-- 1. NOW: Operating Systems -->
+        <div class="timeline-card">
+          <div class="stripe now"></div>
+          <div class="time-col">
+            09:00<br><span class="time-end">10:00 AM</span>
+          </div>
+          <div class="card-body">
+            <div class="card-top">
+              <div class="subject-name">Operating Systems</div>
+              <span class="status-badge badge-now">• NOW</span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-tag">📍 TP-301</span>
+              <span class="meta-tag">👤 Dr. Anita Verma</span>
+              <span class="batch-pill">All</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. CANCELLED: DBMS -->
+        <div class="timeline-card">
+          <div class="stripe cancelled"></div>
+          <div class="time-col">
+            10:00<br><span class="time-end">11:00 AM</span>
+          </div>
+          <div class="card-body">
+            <div class="card-top">
+              <div class="subject-name strikethrough">Database Management Systems</div>
+              <span class="status-badge badge-cancelled">Cancelled</span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-tag">📍 TP-405</span>
+              <span class="meta-tag">👤 Prof. Rajesh K.</span>
+              <span class="batch-pill">All</span>
+            </div>
+            <div class="card-notice notice-cancelled">
+              <span>📢</span>
+              <span>Sir on leave today — updated by Sumit (CR) • 8:42 AM</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. SCHEDULED: DBMS Lab -->
+        <div class="timeline-card">
+          <div class="stripe scheduled"></div>
+          <div class="time-col">
+            11:15<br><span class="time-end">01:00 PM</span>
+          </div>
+          <div class="card-body">
+            <div class="card-top">
+              <div class="subject-name">DBMS Lab</div>
+              <span class="status-badge badge-scheduled">Scheduled</span>
+            </div>
+            <div class="meta-row">
+              <span class="batch-pill" style="background:#FFEDD5; color:#C2410C;">Batch 1</span>
+              <span class="meta-tag">📍 Lab 2</span>
+              <span class="meta-tag">👤 Ms. Priya Nair</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Lunch Break -->
+        <div class="break-row">
+          <span>🍴 Campus Lunch Interval</span>
+          <span>1:00 - 2:00 PM</span>
+        </div>
+
+        <!-- 4. ROOM CHANGED: Computer Networks -->
+        <div class="timeline-card">
+          <div class="stripe moved"></div>
+          <div class="time-col">
+            02:00<br><span class="time-end">03:00 PM</span>
+          </div>
+          <div class="card-body">
+            <div class="card-top">
+              <div class="subject-name">Computer Networks</div>
+              <span class="status-badge badge-moved">↗ Room Changed</span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-tag">👤 Dr. Kavita Rao</span>
+              <span class="batch-pill">All</span>
+            </div>
+            <div class="relocation-box">
+              <span>📍 TP-310 ➔ <strong>TP-502</strong></span>
+              <span style="font-size:11px; opacity:0.8;">Floor 5</span>
+            </div>
+            <div class="card-notice notice-moved" style="margin-top:6px;">
+              <span>🕒</span>
+              <span>Updated by Sumit (CR) • 9:38 AM</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sticky Bottom CTA -->
+    <div class="bottom-cta-bar">
+      <div class="cta-text-wrap">
+        <div class="cta-headline">Get changes before you reach the room</div>
+        <div class="cta-subtext">Instant CR alerts & offline sync</div>
+      </div>
+      <a href="#" id="appLink" class="open-btn">
+        <span>Open in app</span>
+        <span>→</span>
+      </a>
+    </div>
   </div>
 
   <script>
-    // Extract pageId from URL params or path
     const urlParams = new URLSearchParams(window.location.search);
     const pageId = urlParams.get('id') || 'demo-class-101';
 
-    // Deep link with fallback to Play Store with Install Referrer
     const appSchemeUrl = `rostraai://p/${pageId}`;
     const playStoreUrl = `https://play.google.com/store/apps/details?id=com.rostraai.app&referrer=page_id%3D${encodeURIComponent(pageId)}`;
     
     const appBtn = document.getElementById('appLink');
     appBtn.addEventListener('click', (e) => {
       e.preventDefault();
-      // Try opening app, fallback to Play Store after timeout
       const start = Date.now();
       window.location.href = appSchemeUrl;
       setTimeout(() => {
