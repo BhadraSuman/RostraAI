@@ -546,7 +546,16 @@ class TodayViewScreen extends ConsumerWidget {
                               updatedRoom: selectedStatus == ClassStatusType.roomMoved ? roomController.text.trim() : null,
                               editorName: 'Sumit (CR)',
                             );
-                        if (context.mounted) Navigator.pop(modalCtx);
+                        if (context.mounted) {
+                          Navigator.pop(modalCtx);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Status updated • Sent to 58 classmates in CSE 3rd Year Sec A'),
+                              backgroundColor: AppTheme.primaryBlue,
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        }
                       },
                       child: const Text('Update Status in App'),
                     ),
