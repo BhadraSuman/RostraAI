@@ -43,6 +43,13 @@ class _RostraAIAppState extends ConsumerState<RostraAIApp> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await ref.read(currentPageProvider.notifier).createDefaultPageIfEmpty();
       await ref.read(timetableEntriesProvider.notifier).seedSampleSchedule();
+
+      // Check for deep link / referrer pageId to auto-follow without account
+      final uri = Uri.base;
+      final queryPageId = uri.queryParameters['page_id'] ?? uri.queryParameters['id'];
+      if (queryPageId != null && queryPageId.isNotEmpty) {
+        await storage.setFollowedPageId(queryPageId);
+      }
     });
   }
 

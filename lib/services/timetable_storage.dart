@@ -29,6 +29,15 @@ class TimetableStorage {
     await _prefs.setBool(AppConstants.keyIsAge18Confirmed, confirmed);
   }
 
+  // --- Followed Page ID (auto-followed via link/referrer) ---
+  String? getFollowedPageId() {
+    return _prefs.getString(AppConstants.keyFollowedPageId);
+  }
+
+  Future<void> setFollowedPageId(String pageId) async {
+    await _prefs.setString(AppConstants.keyFollowedPageId, pageId);
+  }
+
   // --- Role (CR/Editor vs Follower) ---
   bool isEditorMode() {
     return _prefs.getBool(_keyIsEditor) ?? true; // Default true so CR can edit right away
