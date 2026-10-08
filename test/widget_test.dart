@@ -5,6 +5,7 @@ import 'package:rostraai/features/attendance/attendance_calculator.dart';
 import 'package:rostraai/features/timetable/timetable_providers.dart';
 import 'package:rostraai/models/timetable_models.dart';
 import 'package:rostraai/services/timetable_storage.dart';
+import 'package:rostraai/services/update_checker_service.dart';
 
 void main() {
   group('Attendance Margin Integer Math Tests (CampusFlow v0.3 spec)', () {
@@ -245,6 +246,20 @@ void main() {
 
       final visible = storage.getComments(date: '2020-01-01', entryId: 'slot-1');
       expect(visible.isEmpty, isTrue);
+    });
+  });
+
+  group('In-App Auto-Updater Version Check Tests', () {
+    test('Detects newer version correctly', () {
+      expect(UpdateCheckerService.isVersionGreater('1.0.1', '1.0.0'), isTrue);
+      expect(UpdateCheckerService.isVersionGreater('1.1.0', '1.0.9'), isTrue);
+      expect(UpdateCheckerService.isVersionGreater('2.0.0', '1.9.9'), isTrue);
+    });
+
+    test('Does not flag older or same versions as updates', () {
+      expect(UpdateCheckerService.isVersionGreater('1.0.0', '1.0.0'), isFalse);
+      expect(UpdateCheckerService.isVersionGreater('1.0.0', '1.0.1'), isFalse);
+      expect(UpdateCheckerService.isVersionGreater('0.9.9', '1.0.0'), isFalse);
     });
   });
 }

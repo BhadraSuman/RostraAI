@@ -9,6 +9,7 @@ import 'features/timetable/timetable_grid_screen.dart';
 import 'features/timetable/timetable_providers.dart';
 import 'features/today/today_view_screen.dart';
 import 'services/timetable_storage.dart';
+import 'services/update_checker_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -53,6 +54,12 @@ class _RostraAIAppState extends ConsumerState<RostraAIApp> {
       if (queryPageId != null && queryPageId.isNotEmpty) {
         await storage.setFollowedPageId(queryPageId);
         setState(() => _hasJoinedClass = true);
+      }
+
+      // Check for in-app updates in the background
+      final updateInfo = await UpdateCheckerService.checkForUpdate();
+      if (updateInfo != null && updateInfo.hasUpdate && mounted) {
+        UpdateCheckerService.showUpdateDialog(context, updateInfo);
       }
     });
   }
