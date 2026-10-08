@@ -2,7 +2,7 @@ class AppConstants {
   static const String appName = 'RostraAI';
   static const String appTagline = 'Class changes before you reach the room';
   static const String appVersion = '1.0.0';
-  static const String githubRepo = 'acrosstekdevelopment/RostraAI';
+  static const String githubRepo = ''; // To be configured with user's repository
 
   // Attendance
   static const int defaultAttendanceTargetPercent = 75;

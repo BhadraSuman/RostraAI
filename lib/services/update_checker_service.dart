@@ -24,6 +24,7 @@ class AppUpdateInfo {
 
 class UpdateCheckerService {
   static Future<AppUpdateInfo?> checkForUpdate() async {
+    if (AppConstants.githubRepo.isEmpty) return null;
     try {
       final url = Uri.parse('https://api.github.com/repos/${AppConstants.githubRepo}/releases/latest');
       final response = await http.get(
