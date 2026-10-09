@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/constants/app_constants.dart';
@@ -11,8 +12,16 @@ import 'features/today/today_view_screen.dart';
 import 'services/timetable_storage.dart';
 import 'services/update_checker_service.dart';
 
+final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    debugPrint('Flutter Error: ${details.exception}');
+  };
+
   final storage = await TimetableStorage.init();
 
   runApp(
@@ -45,21 +54,28 @@ class _RostraAIAppState extends ConsumerState<RostraAIApp> {
 
     // Seed default demo class page and sample schedule for instant testing
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await ref.read(currentPageProvider.notifier).createDefaultPageIfEmpty();
-      await ref.read(timetableEntriesProvider.notifier).seedSampleSchedule();
+      try {
+        await ref.read(currentPageProvider.notifier).createDefaultPageIfEmpty();
+        await ref.read(timetableEntriesProvider.notifier).seedSampleSchedule();
 
-      // Check for deep link / referrer pageId to auto-follow without account
-      final uri = Uri.base;
-      final queryPageId = uri.queryParameters['page_id'] ?? uri.queryParameters['id'];
-      if (queryPageId != null && queryPageId.isNotEmpty) {
-        await storage.setFollowedPageId(queryPageId);
-        setState(() => _hasJoinedClass = true);
-      }
+        // Check for deep link / referrer pageId to auto-follow without account on web
+        if (kIsWeb) {
+          final uri = Uri.base;
+          final queryPageId = uri.queryParameters['page_id'] ?? uri.queryParameters['id'];
+          if (queryPageId != null && queryPageId.isNotEmpty) {
+            await storage.setFollowedPageId(queryPageId);
+            if (mounted) setState(() => _hasJoinedClass = true);
+          }
+        }
 
-      // Check for in-app updates in the background
-      final updateInfo = await UpdateCheckerService.checkForUpdate();
-      if (updateInfo != null && updateInfo.hasUpdate && mounted) {
-        UpdateCheckerService.showUpdateDialog(context, updateInfo);
+        // Check for in-app updates in the background
+        final updateInfo = await UpdateCheckerService.checkForUpdate();
+        final navCtx = appNavigatorKey.currentContext;
+        if (updateInfo != null && updateInfo.hasUpdate && navCtx != null && navCtx.mounted) {
+          UpdateCheckerService.showUpdateDialog(navCtx, updateInfo);
+        }
+      } catch (e, st) {
+        debugPrint('PostFrameCallback error: $e\n$st');
       }
     });
   }
@@ -89,6 +105,7 @@ class _RostraAIAppState extends ConsumerState<RostraAIApp> {
     }
 
     return MaterialApp(
+      navigatorKey: appNavigatorKey,
       title: AppConstants.appName,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,

@@ -1,7 +1,7 @@
 class AppConstants {
   static const String appName = 'RostraAI';
   static const String appTagline = 'Class changes before you reach the room';
-  static const String appVersion = '1.0.0';
+  static const String appVersion = '1.0.1';
   static const String githubRepo = 'bhadrasuman/RostraAI';
 
   // Attendance

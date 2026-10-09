@@ -1,5 +1,5 @@
 package com.rostraai.rostraai
 
-import io.flutter.embedding.android.FlutterActivity
+import com.rostraai.app.MainActivity as BaseMainActivity
 
-class MainActivity : FlutterActivity()
+class MainActivity : BaseMainActivity()

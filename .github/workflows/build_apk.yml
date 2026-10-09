@@ -54,8 +54,8 @@ jobs:
 
       - name: Rename APK for release
         run: |
-          cp build/app/outputs/flutter-apk/app-release.apk RostraAI-v1.0.0.apk
           cp build/app/outputs/flutter-apk/app-release.apk app-release.apk
+          cp build/app/outputs/flutter-apk/app-release.apk RostraAI-${{ github.ref_name }}.apk
 
       - name: Upload APK to GitHub Artifacts
         uses: actions/upload-artifact@v4
@@ -72,7 +72,7 @@ jobs:
           tag_name: ${{ github.ref_name }}
           files: |
             app-release.apk
-            RostraAI-v1.0.0.apk
+            RostraAI-${{ github.ref_name }}.apk
           draft: false
           prerelease: false
           body: |
