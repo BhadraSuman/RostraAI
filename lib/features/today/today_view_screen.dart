@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_theme.dart';
 import '../attendance/attendance_calculator.dart';
+import '../navigation/app_sidebar_drawer.dart';
 import '../timetable/timetable_providers.dart';
 
 // State preview modes to demonstrate each Stitch screen
@@ -39,14 +40,32 @@ class TodayViewScreen extends ConsumerWidget {
     final isOffline = demoState == StitchDemoState.offline;
     final isDayOverride = demoState == StitchDemoState.dayOverride;
 
+    final hasSeenGuide = ref.watch(hasSeenGuideProvider);
+
     if (isSkeleton) {
       return _buildSkeletonScreen(context, ref);
     }
 
     return Scaffold(
       backgroundColor: AppTheme.canvasPaper,
+      drawer: AppSidebarDrawer(
+        currentTabIndex: 0,
+        onSelectTab: (idx) {
+          ref.read(bottomNavIndexProvider.notifier).setIndex(idx);
+        },
+        onOpenGuide: () {
+          ref.read(hasSeenGuideProvider.notifier).showGuide();
+        },
+      ),
       appBar: AppBar(
-        titleSpacing: 16,
+        leading: Builder(
+          builder: (ctx) => IconButton(
+            icon: const Icon(Icons.menu_rounded, color: AppTheme.textStone900, size: 24),
+            tooltip: 'Open navigation drawer',
+            onPressed: () => Scaffold.of(ctx).openDrawer(),
+          ),
+        ),
+        titleSpacing: 0,
         title: Row(
           children: [
             Container(
@@ -175,6 +194,12 @@ class TodayViewScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // Welcome / Guided Tour Banner (dismissible)
+            if (!hasSeenGuide) ...[
+              _buildWelcomeGuideBanner(context, ref, isEditor),
+              const SizedBox(height: 12),
+            ],
+
             // Sync status strip
             _buildSyncStrip(isOffline),
             const SizedBox(height: 10),
@@ -228,6 +253,141 @@ class TodayViewScreen extends ConsumerWidget {
             const SizedBox(height: 80),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildWelcomeGuideBanner(BuildContext context, WidgetRef ref, bool isEditor) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppTheme.peachBg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.burntOrange.withValues(alpha: 0.35)),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.burntOrange.withValues(alpha: 0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: AppTheme.peachTint,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  isEditor ? Icons.bolt_rounded : Icons.lightbulb_rounded,
+                  size: 18,
+                  color: AppTheme.burntOrange,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isEditor ? 'CR Mode Active • Quick Guide' : 'Welcome to RostraAI • Quick Guide',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        color: AppTheme.burntOrange,
+                      ),
+                    ),
+                    Text(
+                      isEditor
+                          ? 'You have admin tools to manage classes and broadcast changes.'
+                          : 'Never reach an empty classroom again. Here is how your schedule works:',
+                      style: GoogleFonts.inter(
+                        fontSize: 10.5,
+                        color: AppTheme.textStone600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                icon: const Icon(Icons.close_rounded, size: 18, color: AppTheme.textStone400),
+                tooltip: 'Dismiss guide',
+                onPressed: () {
+                  ref.read(hasSeenGuideProvider.notifier).markAsSeen();
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          const Divider(height: 1, color: AppTheme.peachTint),
+          const SizedBox(height: 10),
+          if (!isEditor) ...[
+            _buildGuideBullet('🟢 Live Status Pills', 'Green = Normal, Red = Cancelled, Amber = Moved room.'),
+            _buildGuideBullet('📊 Attendance Margin', 'Tells you how many classes you can safely skip or must attend to keep 75%.'),
+            _buildGuideBullet('☰ Top Menu', 'Tap the ☰ menu top-left to switch classes, batch groups, or test CR tools.'),
+          ] else ...[
+            _buildGuideBullet('✍️ 1-Tap Class Updates', 'Tap any class card below to mark cancelled, moved, or extra.'),
+            _buildGuideBullet('📲 WhatsApp Broadcast', 'Instantly post formatted schedule updates to your class group.'),
+            _buildGuideBullet('🔄 Switch to Student', 'Tap ⚡ CR mode in the top bar or sidebar to preview the student view.'),
+          ],
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Text(
+                'Reopen anytime from ☰ sidebar',
+                style: GoogleFonts.inter(fontSize: 10, color: AppTheme.textStone500),
+              ),
+              const Spacer(),
+              SizedBox(
+                height: 30,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.burntOrange,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  onPressed: () {
+                    ref.read(hasSeenGuideProvider.notifier).markAsSeen();
+                  },
+                  child: Text(
+                    'Got it!',
+                    style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  static Widget _buildGuideBullet(String title, String desc) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('• ', style: TextStyle(color: AppTheme.burntOrange, fontWeight: FontWeight.bold)),
+          Expanded(
+            child: RichText(
+              text: TextSpan(
+                style: GoogleFonts.inter(fontSize: 11, color: AppTheme.textStone700),
+                children: [
+                  TextSpan(text: '$title: ', style: const TextStyle(fontWeight: FontWeight.w700)),
+                  TextSpan(text: desc),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

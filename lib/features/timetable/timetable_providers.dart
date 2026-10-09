@@ -382,3 +382,37 @@ final todayScheduleProvider = Provider<List<LiveClassItem>>((ref) {
   liveItems.sort((a, b) => a.effectiveStartTime.compareTo(b.effectiveStartTime));
   return liveItems;
 });
+
+// --- Guided Walkthrough & Navigation State ---
+class HasSeenGuideNotifier extends Notifier<bool> {
+  @override
+  bool build() {
+    return ref.watch(storageProvider).hasSeenGuide();
+  }
+
+  void markAsSeen() {
+    state = true;
+    ref.read(storageProvider).setHasSeenGuide(true);
+  }
+
+  void showGuide() {
+    state = false;
+    ref.read(storageProvider).setHasSeenGuide(false);
+  }
+}
+
+final hasSeenGuideProvider = NotifierProvider<HasSeenGuideNotifier, bool>(
+  HasSeenGuideNotifier.new,
+);
+
+class BottomNavIndexNotifier extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  void setIndex(int idx) => state = idx;
+}
+
+final bottomNavIndexProvider = NotifierProvider<BottomNavIndexNotifier, int>(
+  BottomNavIndexNotifier.new,
+);
+

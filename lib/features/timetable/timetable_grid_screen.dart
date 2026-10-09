@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/timetable_models.dart';
+import '../navigation/app_sidebar_drawer.dart';
 import 'add_slot_sheet.dart';
 import 'timetable_providers.dart';
 
@@ -46,8 +47,21 @@ class _TimetableGridScreenState extends ConsumerState<TimetableGridScreen> {
 
     return Scaffold(
       backgroundColor: AppTheme.canvasPaper,
+      drawer: AppSidebarDrawer(
+        currentTabIndex: 1,
+        onSelectTab: (idx) {
+          ref.read(bottomNavIndexProvider.notifier).setIndex(idx);
+        },
+      ),
       appBar: AppBar(
-        titleSpacing: 16,
+        leading: Builder(
+          builder: (ctx) => IconButton(
+            icon: const Icon(Icons.menu_rounded, color: AppTheme.textStone900, size: 24),
+            tooltip: 'Open navigation drawer',
+            onPressed: () => Scaffold.of(ctx).openDrawer(),
+          ),
+        ),
+        titleSpacing: 0,
         title: Row(
           children: [
             Container(

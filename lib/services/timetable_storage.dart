@@ -29,6 +29,9 @@ class TimetableStorage {
     await _prefs.setBool(AppConstants.keyIsAge18Confirmed, confirmed);
   }
 
+  static const String _keyRoleSelected = 'rostraai_role_selected_v1';
+  static const String _keyHasSeenGuide = 'rostraai_has_seen_guide_v1';
+
   // --- Followed Page ID (auto-followed via link/referrer) ---
   String? getFollowedPageId() {
     return _prefs.getString(AppConstants.keyFollowedPageId);
@@ -39,8 +42,32 @@ class TimetableStorage {
   }
 
   // --- Role (CR/Editor vs Follower) ---
+  bool hasSelectedRole() {
+    return _prefs.getBool(_keyRoleSelected) ?? false;
+  }
+
+  Future<void> setRoleSelected(bool selected) async {
+    await _prefs.setBool(_keyRoleSelected, selected);
+  }
+
+  bool hasSeenGuide() {
+    return _prefs.getBool(_keyHasSeenGuide) ?? false;
+  }
+
+  Future<void> setHasSeenGuide(bool seen) async {
+    await _prefs.setBool(_keyHasSeenGuide, seen);
+  }
+
+  int getAttendanceTarget() {
+    return _prefs.getInt(AppConstants.keyAttendanceTarget) ?? AppConstants.defaultAttendanceTargetPercent;
+  }
+
+  Future<void> setAttendanceTarget(int target) async {
+    await _prefs.setInt(AppConstants.keyAttendanceTarget, target);
+  }
+
   bool isEditorMode() {
-    return _prefs.getBool(_keyIsEditor) ?? true; // Default true so CR can edit right away
+    return _prefs.getBool(_keyIsEditor) ?? false; // Default to student unless CR selected
   }
 
   Future<void> setEditorMode(bool isEditor) async {

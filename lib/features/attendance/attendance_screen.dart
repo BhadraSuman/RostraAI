@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_theme.dart';
+import '../navigation/app_sidebar_drawer.dart';
 import '../timetable/timetable_providers.dart';
 import 'attendance_calculator.dart';
 
@@ -26,8 +27,21 @@ class AttendanceScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppTheme.canvasPaper,
+      drawer: AppSidebarDrawer(
+        currentTabIndex: 2,
+        onSelectTab: (idx) {
+          ref.read(bottomNavIndexProvider.notifier).setIndex(idx);
+        },
+      ),
       appBar: AppBar(
-        titleSpacing: 16,
+        leading: Builder(
+          builder: (ctx) => IconButton(
+            icon: const Icon(Icons.menu_rounded, color: AppTheme.textStone900, size: 24),
+            tooltip: 'Open navigation drawer',
+            onPressed: () => Scaffold.of(ctx).openDrawer(),
+          ),
+        ),
+        titleSpacing: 0,
         title: Row(
           children: [
             Container(

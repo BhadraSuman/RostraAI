@@ -13,13 +13,16 @@ class AppTheme {
   static const Color canvasPaper = Color(0xFFFAFAF9); // #FAFAF9 Stone 50
   static const Color cardWhite = Colors.white;
   static const Color borderStone = Color(0xFFE7E5E4); // #E7E5E4 Stone 200
+  static const Color stoneBorder = Color(0xFFE7E5E4);
   static const Color borderStoneLight = Color(0xFFF5F5F4);
   
   // Text Colors
   static const Color textStone900 = Color(0xFF1C1917); // Stone 900
   static const Color textStone700 = Color(0xFF44403C); // Stone 700
+  static const Color textStone600 = Color(0xFF57534E); // Stone 600
   static const Color textStone500 = Color(0xFF78716C); // Stone 500
   static const Color textStone400 = Color(0xFFA8A29E); // Stone 400
+  static const Color textStone300 = Color(0xFFD6D3D1); // Stone 300
 
   // Status Badge Colors (Never generic blue)
   // Safe / Scheduled (Mint)

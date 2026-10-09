@@ -6,6 +6,7 @@ import 'core/theme/app_theme.dart';
 import 'features/attendance/attendance_screen.dart';
 import 'features/onboarding/age_gate_screen.dart';
 import 'features/onboarding/join_class_screen.dart';
+import 'features/onboarding/role_selection_screen.dart';
 import 'features/timetable/timetable_grid_screen.dart';
 import 'features/timetable/timetable_providers.dart';
 import 'features/today/today_view_screen.dart';
@@ -43,6 +44,7 @@ class RostraAIApp extends ConsumerStatefulWidget {
 
 class _RostraAIAppState extends ConsumerState<RostraAIApp> {
   bool _isAgeConfirmed = false;
+  bool _hasSelectedRole = false;
   bool _hasJoinedClass = false;
 
   @override
@@ -50,6 +52,7 @@ class _RostraAIAppState extends ConsumerState<RostraAIApp> {
     super.initState();
     final storage = ref.read(storageProvider);
     _isAgeConfirmed = storage.isAgeConfirmed();
+    _hasSelectedRole = storage.hasSelectedRole();
     _hasJoinedClass = storage.getFollowedPageId() != null;
 
     // Seed default demo class page and sample schedule for instant testing
@@ -90,6 +93,19 @@ class _RostraAIAppState extends ConsumerState<RostraAIApp> {
           setState(() => _isAgeConfirmed = true);
         },
       );
+    } else if (!_hasSelectedRole) {
+      activeScreen = RoleSelectionScreen(
+        onRoleSelected: (isCR) async {
+          final storage = ref.read(storageProvider);
+          await storage.setRoleSelected(true);
+          await storage.setEditorMode(isCR);
+          ref.read(isEditorModeProvider.notifier).setMode(isCR);
+          setState(() => _hasSelectedRole = true);
+        },
+        onBack: () {
+          setState(() => _isAgeConfirmed = false);
+        },
+      );
     } else if (!_hasJoinedClass) {
       activeScreen = JoinClassScreen(
         onClassJoined: () {
@@ -97,7 +113,7 @@ class _RostraAIAppState extends ConsumerState<RostraAIApp> {
           setState(() => _hasJoinedClass = true);
         },
         onBack: () {
-          setState(() => _isAgeConfirmed = false);
+          setState(() => _hasSelectedRole = false);
         },
       );
     } else {
@@ -116,15 +132,8 @@ class _RostraAIAppState extends ConsumerState<RostraAIApp> {
   }
 }
 
-class MainNavigationShell extends StatefulWidget {
+class MainNavigationShell extends ConsumerWidget {
   const MainNavigationShell({super.key});
-
-  @override
-  State<MainNavigationShell> createState() => _MainNavigationShellState();
-}
-
-class _MainNavigationShellState extends State<MainNavigationShell> {
-  int _currentIndex = 0;
 
   final List<Widget> _screens = const [
     TodayViewScreen(),
@@ -133,19 +142,21 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
   ];
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final currentIndex = ref.watch(bottomNavIndexProvider);
+
     return Scaffold(
       body: IndexedStack(
-        index: _currentIndex,
+        index: currentIndex,
         children: _screens,
       ),
       bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
+        selectedIndex: currentIndex,
         elevation: 6,
         backgroundColor: Colors.white,
         indicatorColor: AppTheme.peachTint,
         onDestinationSelected: (idx) {
-          setState(() => _currentIndex = idx);
+          ref.read(bottomNavIndexProvider.notifier).setIndex(idx);
         },
         destinations: const [
           NavigationDestination(
