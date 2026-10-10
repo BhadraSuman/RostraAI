@@ -54,6 +54,7 @@ class ClassPage {
   final String verificationStatus; // 'unverified' | 'verified'
   final String timezone;
   final List<String> availableGroups;
+  final String classCode;
 
   const ClassPage({
     required this.id,
@@ -67,10 +68,12 @@ class ClassPage {
     this.verificationStatus = 'unverified',
     this.timezone = 'Asia/Kolkata',
     this.availableGroups = const ['All', 'B1', 'B2'],
+    this.classCode = '',
   });
 
-  String get title => '$department $year $section';
+  String get title => '$department $year • $section';
   String get subtitle => college;
+  String get displayCode => classCode.isNotEmpty ? classCode : id.toUpperCase();
 
   Map<String, dynamic> toMap() {
     return {
@@ -85,6 +88,7 @@ class ClassPage {
       'verificationStatus': verificationStatus,
       'timezone': timezone,
       'availableGroups': availableGroups,
+      'classCode': classCode,
     };
   }
 
@@ -101,6 +105,7 @@ class ClassPage {
       verificationStatus: map['verificationStatus'] as String? ?? 'unverified',
       timezone: map['timezone'] as String? ?? 'Asia/Kolkata',
       availableGroups: (map['availableGroups'] as List<dynamic>?)?.cast<String>() ?? const ['All', 'B1', 'B2'],
+      classCode: map['classCode'] as String? ?? map['code'] as String? ?? '',
     );
   }
 
@@ -110,7 +115,7 @@ class ClassPage {
 
 class TimetableEntry {
   final String id;
-  final String day; // MONDAY, TUESDAY, etc.
+  final String day; // SUNDAY, MONDAY, TUESDAY, etc.
   final String startTime; // "09:00"
   final String endTime; // "10:00"
   final String subject;
@@ -118,6 +123,7 @@ class TimetableEntry {
   final String teacher;
   final String group; // "All", "B1", "B2", etc.
   final String? courseCode;
+  final bool isBreak; // Recess, Lunch, or Break slot
 
   const TimetableEntry({
     required this.id,
@@ -129,6 +135,7 @@ class TimetableEntry {
     required this.teacher,
     this.group = 'All',
     this.courseCode,
+    this.isBreak = false,
   });
 
   Map<String, dynamic> toMap() {
@@ -141,6 +148,7 @@ class TimetableEntry {
       'room': room,
       'teacher': teacher,
       'group': group,
+      'isBreak': isBreak,
       if (courseCode != null) 'courseCode': courseCode,
     };
   }
@@ -156,6 +164,7 @@ class TimetableEntry {
       teacher: map['teacher'] as String? ?? '',
       group: map['group'] as String? ?? 'All',
       courseCode: map['courseCode'] as String?,
+      isBreak: map['isBreak'] as bool? ?? false,
     );
   }
 
@@ -169,6 +178,7 @@ class TimetableEntry {
     String? teacher,
     String? group,
     String? courseCode,
+    bool? isBreak,
   }) {
     return TimetableEntry(
       id: id ?? this.id,
@@ -180,6 +190,7 @@ class TimetableEntry {
       teacher: teacher ?? this.teacher,
       group: group ?? this.group,
       courseCode: courseCode ?? this.courseCode,
+      isBreak: isBreak ?? this.isBreak,
     );
   }
 }

@@ -274,21 +274,32 @@ class TimetableStorage {
   static const String _keyUserName = 'rostraai_user_name';
   static const String _keyUserEmail = 'rostraai_user_email';
   static const String _keyUserPhotoUrl = 'rostraai_user_photo_url';
+  static const String _keyUserGender = 'rostraai_user_gender';
+  static const String _keyUserInstitution = 'rostraai_user_institution';
+  static const String _keyFollowedPagesList = 'rostraai_followed_pages_list_v1';
 
   bool isLoggedIn() {
     return _prefs.getString(_keyUserId) != null;
+  }
+
+  bool isProfileComplete() {
+    return _prefs.getString(_keyUserInstitution) != null && _prefs.getString(_keyUserInstitution)!.trim().isNotEmpty;
   }
 
   String? getUserId() => _prefs.getString(_keyUserId);
   String? getUserName() => _prefs.getString(_keyUserName);
   String? getUserEmail() => _prefs.getString(_keyUserEmail);
   String? getUserPhotoUrl() => _prefs.getString(_keyUserPhotoUrl);
+  String? getUserGender() => _prefs.getString(_keyUserGender);
+  String? getUserInstitution() => _prefs.getString(_keyUserInstitution);
 
   Future<void> saveUserProfile({
     required String uid,
     required String name,
     required String email,
     String? photoUrl,
+    String? gender,
+    String? institution,
   }) async {
     await _prefs.setString(_keyUserId, uid);
     await _prefs.setString(_keyUserName, name);
@@ -298,6 +309,42 @@ class TimetableStorage {
     } else {
       await _prefs.remove(_keyUserPhotoUrl);
     }
+    if (gender != null) {
+      await _prefs.setString(_keyUserGender, gender);
+    }
+    if (institution != null) {
+      await _prefs.setString(_keyUserInstitution, institution);
+    }
+  }
+
+  Future<void> updateUserProfile({
+    String? name,
+    String? gender,
+    String? institution,
+  }) async {
+    if (name != null) await _prefs.setString(_keyUserName, name);
+    if (gender != null) await _prefs.setString(_keyUserGender, gender);
+    if (institution != null) await _prefs.setString(_keyUserInstitution, institution);
+  }
+
+  List<String> getFollowedPagesList() {
+    final raw = _prefs.getStringList(_keyFollowedPagesList);
+    if (raw != null) return raw;
+    final single = getFollowedPageId();
+    return single != null ? [single] : [];
+  }
+
+  Future<void> addFollowedPage(String pageId) async {
+    final list = getFollowedPagesList().toSet();
+    list.add(pageId);
+    await _prefs.setStringList(_keyFollowedPagesList, list.toList());
+    await setFollowedPageId(pageId); // Set as current active
+  }
+
+  Future<void> removeFollowedPage(String pageId) async {
+    final list = getFollowedPagesList().toSet();
+    list.remove(pageId);
+    await _prefs.setStringList(_keyFollowedPagesList, list.toList());
   }
 
   Future<void> clearUserProfile() async {
@@ -305,5 +352,7 @@ class TimetableStorage {
     await _prefs.remove(_keyUserName);
     await _prefs.remove(_keyUserEmail);
     await _prefs.remove(_keyUserPhotoUrl);
+    await _prefs.remove(_keyUserGender);
+    await _prefs.remove(_keyUserInstitution);
   }
 }

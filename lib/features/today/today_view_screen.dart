@@ -200,42 +200,14 @@ class _TodayViewScreenState extends ConsumerState<TodayViewScreen> {
               ),
             ),
           ),
-          // Quick Switcher icon to preview any Stitch state (Normal, CR, Day Override, Holiday, Offline, Skeleton)
-          PopupMenuButton<StitchDemoState>(
-            icon: const Icon(Icons.palette_outlined, size: 20, color: AppTheme.burntOrange),
-            tooltip: 'Preview Stitch Screen States',
-            onSelected: (val) {
-              ref.read(stitchDemoStateProvider.notifier).setDemoState(val);
-              if (val == StitchDemoState.crMode) {
-                ref.read(isEditorModeProvider.notifier).toggle();
-              }
+          IconButton(
+            icon: const Icon(Icons.share_outlined, color: AppTheme.burntOrange, size: 20),
+            tooltip: 'Share Class Code',
+            onPressed: () {
+              final code = page?.classCode ?? page?.id ?? 'DEMO';
+              final title = page != null ? '${page.department} ${page.year}' : 'Class';
+              _shareInviteOnWhatsApp(title, code);
             },
-            itemBuilder: (ctx) => [
-              const PopupMenuItem(
-                value: StitchDemoState.normal,
-                child: Text('1. Today - Glance Dashboard'),
-              ),
-              const PopupMenuItem(
-                value: StitchDemoState.crMode,
-                child: Text('2. Today - CR Mode Dashboard'),
-              ),
-              const PopupMenuItem(
-                value: StitchDemoState.dayOverride,
-                child: Text('3. Today - Day Override State'),
-              ),
-              const PopupMenuItem(
-                value: StitchDemoState.holiday,
-                child: Text('4. Today - Holiday State'),
-              ),
-              const PopupMenuItem(
-                value: StitchDemoState.offline,
-                child: Text('5. Today - Offline State'),
-              ),
-              const PopupMenuItem(
-                value: StitchDemoState.skeleton,
-                child: Text('6. Today - Loading Skeleton State'),
-              ),
-            ],
           ),
           IconButton(
             icon: const Icon(Icons.notifications_none_rounded, color: AppTheme.textStone700),
@@ -282,7 +254,7 @@ class _TodayViewScreenState extends ConsumerState<TodayViewScreen> {
             if (isHoliday) ...[
               _buildHolidayHeroCard(context),
             ] else ...[
-              _buildNormalHeroCard(isOffline, isDayOverride),
+              _buildNormalHeroCard(isOffline, isDayOverride, todaySchedule),
             ],
             const SizedBox(height: 16),
 
@@ -304,7 +276,7 @@ class _TodayViewScreenState extends ConsumerState<TodayViewScreen> {
 
             // Schedule Header & Timeline Items
             if (!isHoliday) ...[
-              _buildScheduleHeader(isDayOverride, isOffline),
+              _buildScheduleHeader(isDayOverride, isOffline, todaySchedule.length),
               const SizedBox(height: 12),
               _buildScheduleTimeline(context, ref, todaySchedule, isEditor, isDayOverride, isOffline, page?.id ?? 'demo-class-101'),
             ] else ...[
@@ -670,7 +642,53 @@ class _TodayViewScreenState extends ConsumerState<TodayViewScreen> {
     );
   }
 
-  Widget _buildNormalHeroCard(bool isOffline, bool isDayOverride) {
+  Widget _buildNormalHeroCard(bool isOffline, bool isDayOverride, List<LiveClassItem> schedule) {
+    LiveClassItem? upcomingClass;
+    for (final item in schedule) {
+      if (!item.isCancelled) {
+        upcomingClass = item;
+        break;
+      }
+    }
+
+    if (upcomingClass == null) {
+      return Container(
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFFEA580C), Color(0xFFC2410C)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'All Done for Today 🎉',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'No upcoming classes scheduled. Enjoy your day!',
+              style: GoogleFonts.inter(fontSize: 13, color: Colors.white.withValues(alpha: 0.9)),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final entry = upcomingClass.entry;
+    final title = entry.subject;
+    final timeStr = '${upcomingClass.effectiveStartTime} – ${upcomingClass.effectiveEndTime}';
+    final roomStr = '${upcomingClass.effectiveRoom} • ${entry.group}';
+    final facultyStr = entry.teacher;
+
     return Container(
       decoration: BoxDecoration(
         gradient: const LinearGradient(
@@ -712,10 +730,10 @@ class _TodayViewScreenState extends ConsumerState<TodayViewScreen> {
                 const SizedBox(width: 6),
                 Text(
                   isOffline
-                      ? 'NOW • Cached view • Ends 10:00 AM [25m left]'
+                      ? 'CACHED • $title'
                       : isDayOverride
-                          ? 'NOW • Microprocessors • TP-402 ends 10:00 AM'
-                          : 'NOW • Operating Systems • TP-101 ends 10:00 AM',
+                          ? 'OVERRIDE • $title'
+                          : 'NEXT UP • $title',
                   style: GoogleFonts.inter(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
@@ -729,7 +747,7 @@ class _TodayViewScreenState extends ConsumerState<TodayViewScreen> {
 
           // Subtitle UP NEXT
           Text(
-            'UP NEXT • IN 1 HR 05 MIN',
+            'TODAY’S SCHEDULE',
             style: GoogleFonts.inter(
               fontSize: 11,
               fontWeight: FontWeight.w700,
@@ -741,9 +759,9 @@ class _TodayViewScreenState extends ConsumerState<TodayViewScreen> {
 
           // Subject Title
           Text(
-            isDayOverride ? 'Compiler Design' : 'DBMS Lab',
+            title,
             style: GoogleFonts.plusJakartaSans(
-              fontSize: 26,
+              fontSize: 24,
               fontWeight: FontWeight.w800,
               color: Colors.white,
               letterSpacing: -0.5,
@@ -760,7 +778,7 @@ class _TodayViewScreenState extends ConsumerState<TodayViewScreen> {
                   const Icon(Icons.access_time_filled_rounded, size: 16, color: Colors.white),
                   const SizedBox(width: 6),
                   Text(
-                    '11:15 AM – 1:00 PM',
+                    timeStr,
                     style: GoogleFonts.inter(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
@@ -780,7 +798,7 @@ class _TodayViewScreenState extends ConsumerState<TodayViewScreen> {
                     const Icon(Icons.location_on, size: 13, color: AppTheme.burntOrange),
                     const SizedBox(width: 4),
                     Text(
-                      isDayOverride ? 'TP-501 • Batch 1' : 'Lab 2 • Batch 1',
+                      roomStr,
                       style: GoogleFonts.inter(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
@@ -792,14 +810,16 @@ class _TodayViewScreenState extends ConsumerState<TodayViewScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 4),
-          Text(
-            isDayOverride ? 'Dr. Meera S.' : 'Ms. Priya Nair',
-            style: GoogleFonts.inter(
-              fontSize: 12,
-              color: Colors.white.withValues(alpha: 0.85),
+          if (facultyStr.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              facultyStr,
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                color: Colors.white.withValues(alpha: 0.85),
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );
@@ -1166,14 +1186,14 @@ class _TodayViewScreenState extends ConsumerState<TodayViewScreen> {
     );
   }
 
-  Widget _buildScheduleHeader(bool isDayOverride, bool isOffline) {
+  Widget _buildScheduleHeader(bool isDayOverride, bool isOffline, int sessionCount) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Row(
           children: [
             Text(
-              isDayOverride ? 'Friday Schedule' : isOffline ? 'Wednesday Timeline' : 'Schedule',
+              isDayOverride ? 'Special Schedule' : isOffline ? 'Cached Timeline' : 'Schedule',
               style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.textStone900),
             ),
             const SizedBox(width: 8),
@@ -1181,14 +1201,14 @@ class _TodayViewScreenState extends ConsumerState<TodayViewScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(color: const Color(0xFFF5F5F4), borderRadius: BorderRadius.circular(6)),
               child: Text(
-                isOffline ? '5 sessions cached' : '5 Classes',
+                '$sessionCount sessions',
                 style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textStone700),
               ),
             ),
           ],
         ),
         Text(
-          'SRM Academia Slot 1',
+          IstClock.todayDateString(),
           style: GoogleFonts.inter(fontSize: 11, color: AppTheme.textStone500),
         ),
       ],
@@ -1204,105 +1224,99 @@ class _TodayViewScreenState extends ConsumerState<TodayViewScreen> {
     bool isOffline,
     String pageId,
   ) {
+    if (schedule.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(28),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppTheme.borderStone),
+        ),
+        child: Column(
+          children: [
+            const Icon(Icons.wb_sunny_outlined, size: 36, color: AppTheme.burntOrange),
+            const SizedBox(height: 10),
+            Text(
+              'No classes scheduled for today',
+              style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: AppTheme.textStone900),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Take a break or check the weekly timetable tab.',
+              style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textStone500),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Column(
-      children: [
-        // 1. Operating Systems (NOW)
-        _buildStitchClassCard(
-          context: context,
-          ref: ref,
-          stripeColor: AppTheme.burntOrange,
-          time: '9:00 AM – 10:00 AM',
-          batch: 'Batch All',
-          statusBadge: '• NOW',
-          statusBg: AppTheme.peachBg,
-          statusTextCol: AppTheme.burntOrange,
-          subject: isDayOverride ? 'Microprocessors' : 'Operating Systems',
-          room: isDayOverride ? 'TP-402' : 'TP-301',
-          faculty: isDayOverride ? 'Prof. Sundaram' : 'Dr. Anita Verma',
-          isEditor: isEditor,
-          pageId: pageId,
-        ),
-        const SizedBox(height: 10),
+      children: schedule.map((item) {
+        final entry = item.entry;
 
-        // 2. DBMS (Cancelled)
-        _buildStitchClassCard(
-          context: context,
-          ref: ref,
-          stripeColor: const Color(0xFFDC2626),
-          time: '10:00 AM – 11:00 AM',
-          batch: 'Batch All',
-          statusBadge: 'Cancelled',
-          statusBg: AppTheme.blushBg,
-          statusTextCol: AppTheme.oxbloodText,
-          subject: isDayOverride ? 'Software Engineering' : 'Database Management Systems',
-          room: isDayOverride ? 'TP-302' : 'TP-406',
-          faculty: isDayOverride ? 'Dr. Meera S.' : 'Prof. Rajesh K.',
-          isCancelled: true,
-          broadcastNotice: 'Sir on leave today — updated by Sumit (CR) • 8:42 AM',
-          isEditor: isEditor,
-          pageId: pageId,
-        ),
-        const SizedBox(height: 10),
+        if (entry.isBreak) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: _buildBreakCard('${entry.startTime} – ${entry.endTime}: ${entry.subject}', 'Recess / Interval • Campus Open'),
+          );
+        }
 
-        // 3. DBMS Lab (Scheduled)
-        _buildStitchClassCard(
-          context: context,
-          ref: ref,
-          stripeColor: const Color(0xFF10B981),
-          time: '11:15 AM – 1:00 PM',
-          batch: 'Batch 1',
-          statusBadge: 'Scheduled',
-          statusBg: const Color(0xFFECFDF5),
-          statusTextCol: const Color(0xFF065F46),
-          subject: isDayOverride ? 'Compiler Design Lab' : 'DBMS Lab',
-          room: isDayOverride ? 'Lab 3' : 'Lab 2',
-          faculty: isDayOverride ? 'Systems Complex' : 'Ms. Priya Nair',
-          extraTag: '105 mins',
-          isEditor: isEditor,
-          pageId: pageId,
-        ),
-        const SizedBox(height: 10),
+        final isCancelled = item.isCancelled;
+        final isMoved = item.isRoomMoved;
+        final isTimeMoved = item.isTimeMoved;
 
-        // Lunch Break Row
-        _buildBreakCard('Free Slot: 1:00 – 2:00 PM', 'Java Green & Library are open'),
-        const SizedBox(height: 10),
+        Color stripeCol = AppTheme.burntOrange;
+        String badgeText = 'Scheduled';
+        Color badgeBg = const Color(0xFFECFDF5);
+        Color badgeTextCol = const Color(0xFF065F46);
 
-        // 4. Computer Networks (Room Changed)
-        _buildStitchClassCard(
-          context: context,
-          ref: ref,
-          stripeColor: const Color(0xFF2563EB),
-          time: '2:00 PM – 3:00 PM',
-          batch: 'Batch All',
-          statusBadge: '↗ Room Changed',
-          statusBg: const Color(0xFFEFF6FF),
-          statusTextCol: const Color(0xFF1E40AF),
-          subject: isDayOverride ? 'Web Technologies' : 'Computer Networks',
-          room: 'TP-310 ➔ TP-502',
-          faculty: isDayOverride ? 'Prof. Ananya R.' : 'Dr. Kavita Rao',
-          broadcastNotice: 'Updated by Sumit (CR) • 9:38 AM',
-          isEditor: isEditor,
-          pageId: pageId,
-        ),
-        const SizedBox(height: 10),
+        if (isCancelled) {
+          stripeCol = const Color(0xFFDC2626);
+          badgeText = 'Cancelled';
+          badgeBg = AppTheme.blushBg;
+          badgeTextCol = AppTheme.oxbloodText;
+        } else if (isMoved) {
+          stripeCol = const Color(0xFF2563EB);
+          badgeText = '↗ Room Moved';
+          badgeBg = const Color(0xFFEFF6FF);
+          badgeTextCol = const Color(0xFF1E40AF);
+        } else if (isTimeMoved) {
+          stripeCol = const Color(0xFFD97706);
+          badgeText = '⏰ Time Changed';
+          badgeBg = const Color(0xFFFEF3C7);
+          badgeTextCol = const Color(0xFFB45309);
+        }
 
-        // 5. Discrete Mathematics (Extra Class)
-        _buildStitchClassCard(
-          context: context,
-          ref: ref,
-          stripeColor: const Color(0xFF8B5CF6),
-          time: '3:15 PM – 4:15 PM',
-          batch: 'Batch All',
-          statusBadge: 'Extra Class',
-          statusBg: const Color(0xFFF5F3FF),
-          statusTextCol: const Color(0xFF5B21B6),
-          subject: 'Discrete Mathematics',
-          room: 'TP-301',
-          faculty: 'Prof. Arjun Mehta',
-          isEditor: isEditor,
-          pageId: pageId,
-        ),
-      ],
+        String? notice = item.status?.note;
+        if (notice == null && isCancelled) {
+          notice = 'Marked cancelled by CR (${item.status?.updatedByName ?? "CR"})';
+        } else if (notice == null && isMoved) {
+          notice = 'Room shifted to ${item.effectiveRoom} by ${item.status?.updatedByName ?? "CR"}';
+        }
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: _buildStitchClassCard(
+            context: context,
+            ref: ref,
+            stripeColor: stripeCol,
+            time: '${item.effectiveStartTime} – ${item.effectiveEndTime}',
+            batch: entry.group.isEmpty ? 'All' : entry.group,
+            statusBadge: badgeText,
+            statusBg: badgeBg,
+            statusTextCol: badgeTextCol,
+            subject: entry.subject,
+            room: item.effectiveRoom,
+            faculty: entry.teacher,
+            isCancelled: isCancelled,
+            broadcastNotice: notice,
+            isEditor: isEditor,
+            pageId: pageId,
+            entryId: entry.id,
+          ),
+        );
+      }).toList(),
     );
   }
 
@@ -1319,10 +1333,10 @@ class _TodayViewScreenState extends ConsumerState<TodayViewScreen> {
     required String room,
     required String faculty,
     bool isCancelled = false,
-    String? extraTag,
     String? broadcastNotice,
     required bool isEditor,
     required String pageId,
+    required String entryId,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -1483,7 +1497,7 @@ class _TodayViewScreenState extends ConsumerState<TodayViewScreen> {
                           children: [
                             Expanded(
                               child: InkWell(
-                                onTap: () => _showCRChangeStatusDialog(context, subject),
+                                onTap: () => _showCRChangeStatusDialog(context, ref, subject, entryId, room),
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
@@ -1692,7 +1706,16 @@ class _TodayViewScreenState extends ConsumerState<TodayViewScreen> {
     );
   }
 
-  void _showCRChangeStatusDialog(BuildContext context, String subject) {
+  void _showCRChangeStatusDialog(
+    BuildContext context,
+    WidgetRef ref,
+    String subject,
+    String entryId,
+    String currentRoom,
+  ) {
+    final storage = ref.read(storageProvider);
+    final editorName = storage.getUserName() ?? 'CR';
+
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
@@ -1707,21 +1730,53 @@ class _TodayViewScreenState extends ConsumerState<TodayViewScreen> {
             ListTile(
               leading: const Icon(Icons.cancel_outlined, color: Colors.red),
               title: const Text('Mark Cancelled (Sir on leave)'),
-              onTap: () {
+              subtitle: const Text('Broadcasts cancelled badge instantly to all students'),
+              onTap: () async {
                 Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Marked cancelled • Updated for 58 classmates')),
-                );
+                await ref.read(todayStatusesProvider.notifier).setStatus(
+                      entryId: entryId,
+                      status: ClassStatusType.cancelled,
+                      note: 'Class cancelled today ($editorName)',
+                      editorName: editorName,
+                    );
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Marked cancelled • Live updated for all classmates'),
+                      backgroundColor: const Color(0xFFDC2626),
+                    ),
+                  );
+                }
               },
             ),
             ListTile(
               leading: const Icon(Icons.swap_horiz_rounded, color: Colors.blue),
-              title: const Text('Move Room (e.g. TP-502)'),
+              title: const Text('Move Room'),
+              subtitle: Text('Current: $currentRoom'),
               onTap: () {
                 Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Room change saved • Broadcasted')),
-                );
+                _showMoveRoomDialog(context, ref, subject, entryId, currentRoom, editorName);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.restart_alt_rounded, color: Color(0xFF10B981)),
+              title: const Text('Reset to Normal / Scheduled'),
+              onTap: () async {
+                Navigator.pop(ctx);
+                await ref.read(todayStatusesProvider.notifier).setStatus(
+                      entryId: entryId,
+                      status: ClassStatusType.normal,
+                      note: null,
+                      editorName: editorName,
+                    );
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Status reset to normal • Synced'),
+                      backgroundColor: Color(0xFF10B981),
+                    ),
+                  );
+                }
               },
             ),
           ],
@@ -1730,8 +1785,83 @@ class _TodayViewScreenState extends ConsumerState<TodayViewScreen> {
     );
   }
 
+  void _showMoveRoomDialog(
+    BuildContext context,
+    WidgetRef ref,
+    String subject,
+    String entryId,
+    String currentRoom,
+    String editorName,
+  ) {
+    final roomCtrl = TextEditingController(text: currentRoom);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Move Room for $subject', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Enter new room number:', style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textStone600)),
+            const SizedBox(height: 8),
+            TextField(
+              controller: roomCtrl,
+              autofocus: true,
+              decoration: const InputDecoration(
+                hintText: 'e.g. TP-502 or Lab 4',
+                contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.burntOrange,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () async {
+              final newRoom = roomCtrl.text.trim();
+              if (newRoom.isEmpty) return;
+              Navigator.pop(ctx);
+              await ref.read(todayStatusesProvider.notifier).setStatus(
+                    entryId: entryId,
+                    status: ClassStatusType.roomMoved,
+                    updatedRoom: newRoom,
+                    note: 'Room shifted from $currentRoom to $newRoom ($editorName)',
+                    editorName: editorName,
+                  );
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Room shifted to $newRoom • Live broadcasted'),
+                    backgroundColor: const Color(0xFF2563EB),
+                  ),
+                );
+              }
+            },
+            child: const Text('Save & Broadcast'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _postToWhatsApp(String subject, String time, String room) async {
     final text = '📢 $subject $time update: Room is $room. Check live schedule: https://rostra.ai/p/demo-class-101';
+    final url = Uri.parse('whatsapp://send?text=${Uri.encodeComponent(text)}');
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url);
+    } else {
+      final webUrl = Uri.parse('https://wa.me/?text=${Uri.encodeComponent(text)}');
+      await launchUrl(webUrl, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  void _shareInviteOnWhatsApp(String title, String code) async {
+    final text = '📢 Join our live class schedule on RostraAI!\nClass: $title\nClass Code: *$code*\nDownload APK: https://github.com/BhadraSuman/RostraAI/releases/latest';
     final url = Uri.parse('whatsapp://send?text=${Uri.encodeComponent(text)}');
     if (await canLaunchUrl(url)) {
       await launchUrl(url);

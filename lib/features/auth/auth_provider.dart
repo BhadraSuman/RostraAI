@@ -7,13 +7,35 @@ class UserProfile {
   final String name;
   final String email;
   final String? photoUrl;
+  final String? gender;
+  final String? institution;
 
   const UserProfile({
     required this.uid,
     required this.name,
     required this.email,
     this.photoUrl,
+    this.gender,
+    this.institution,
   });
+
+  UserProfile copyWith({
+    String? uid,
+    String? name,
+    String? email,
+    String? photoUrl,
+    String? gender,
+    String? institution,
+  }) {
+    return UserProfile(
+      uid: uid ?? this.uid,
+      name: name ?? this.name,
+      email: email ?? this.email,
+      photoUrl: photoUrl ?? this.photoUrl,
+      gender: gender ?? this.gender,
+      institution: institution ?? this.institution,
+    );
+  }
 }
 
 class AuthNotifier extends Notifier<UserProfile?> {
@@ -27,6 +49,8 @@ class AuthNotifier extends Notifier<UserProfile?> {
       name: storage.getUserName() ?? 'Student',
       email: storage.getUserEmail() ?? '',
       photoUrl: storage.getUserPhotoUrl(),
+      gender: storage.getUserGender(),
+      institution: storage.getUserInstitution(),
     );
   }
 

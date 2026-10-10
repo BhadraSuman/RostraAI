@@ -7,9 +7,8 @@ import 'core/theme/app_theme.dart';
 import 'features/attendance/attendance_screen.dart';
 import 'features/auth/auth_provider.dart';
 import 'features/auth/login_screen.dart';
-import 'features/onboarding/age_gate_screen.dart';
-import 'features/onboarding/join_class_screen.dart';
-import 'features/onboarding/role_selection_screen.dart';
+import 'features/onboarding/class_discovery_screen.dart';
+import 'features/onboarding/user_profile_setup_screen.dart';
 import 'features/timetable/timetable_grid_screen.dart';
 import 'features/timetable/timetable_providers.dart';
 import 'features/today/today_view_screen.dart';
@@ -58,18 +57,16 @@ class RostraAIApp extends ConsumerStatefulWidget {
 }
 
 class _RostraAIAppState extends ConsumerState<RostraAIApp> {
-  bool _isAgeConfirmed = false;
   bool _isLoggedIn = false;
-  bool _hasSelectedRole = false;
+  bool _isProfileComplete = false;
   bool _hasJoinedClass = false;
 
   @override
   void initState() {
     super.initState();
     final storage = ref.read(storageProvider);
-    _isAgeConfirmed = storage.isAgeConfirmed();
     _isLoggedIn = storage.isLoggedIn();
-    _hasSelectedRole = storage.hasSelectedRole();
+    _isProfileComplete = storage.isProfileComplete();
     _hasJoinedClass = storage.getFollowedPageId() != null;
 
     // Seed default demo class page and sample schedule for instant testing
@@ -110,40 +107,35 @@ class _RostraAIAppState extends ConsumerState<RostraAIApp> {
     });
 
     Widget activeScreen;
-    if (!_isAgeConfirmed) {
-      activeScreen = AgeGateScreen(
-        onConfirmed: () {
-          ref.read(storageProvider).setAgeConfirmed(true);
-          setState(() => _isAgeConfirmed = true);
-        },
-      );
-    } else if (!_isLoggedIn) {
+    if (!_isLoggedIn) {
       activeScreen = LoginScreen(
         onLoginSuccess: () {
-          setState(() => _isLoggedIn = true);
+          final storage = ref.read(storageProvider);
+          setState(() {
+            _isLoggedIn = true;
+            _isProfileComplete = storage.isProfileComplete();
+          });
         },
       );
-    } else if (!_hasSelectedRole) {
-      activeScreen = RoleSelectionScreen(
-        onRoleSelected: (isCR) async {
-          final storage = ref.read(storageProvider);
-          await storage.setRoleSelected(true);
-          await storage.setEditorMode(isCR);
-          ref.read(isEditorModeProvider.notifier).setMode(isCR);
-          setState(() => _hasSelectedRole = true);
-        },
-        onBack: () {
-          setState(() => _isLoggedIn = false);
+    } else if (!_isProfileComplete) {
+      activeScreen = UserProfileSetupScreen(
+        onProfileComplete: () {
+          setState(() => _isProfileComplete = true);
         },
       );
     } else if (!_hasJoinedClass) {
-      activeScreen = JoinClassScreen(
-        onClassJoined: () {
-          ref.read(storageProvider).setFollowedPageId('demo-class-101');
+      activeScreen = ClassDiscoveryScreen(
+        onClassSelected: (page, isCR) async {
+          final storage = ref.read(storageProvider);
+          await storage.addFollowedPage(page.id);
+          await storage.savePage(page);
+          await storage.setEditorMode(isCR);
+          ref.read(currentPageProvider.notifier).updatePage(page);
+          ref.read(isEditorModeProvider.notifier).setMode(isCR);
           setState(() => _hasJoinedClass = true);
         },
         onBack: () {
-          setState(() => _hasSelectedRole = false);
+          setState(() => _isProfileComplete = false);
         },
       );
     } else {

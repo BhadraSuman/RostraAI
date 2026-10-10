@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_theme.dart';
 import '../auth/auth_provider.dart';
+import '../onboarding/class_discovery_screen.dart';
 import '../timetable/timetable_providers.dart';
 import '../../services/update_checker_service.dart';
 
@@ -608,54 +609,9 @@ class AppSidebarDrawer extends ConsumerWidget {
   }
 
   static void _showSwitchClassDialog(BuildContext context, WidgetRef ref) {
-    final controller = TextEditingController(text: 'CSE-3A');
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        title: Text(
-          'Switch Class',
-          style: GoogleFonts.plusJakartaSans(fontSize: 17, fontWeight: FontWeight.w700),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Enter class invite code to follow another timetable:',
-              style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textStone500),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: controller,
-              decoration: InputDecoration(
-                hintText: 'e.g. ECE-2B, MECH-4A',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.burntOrange,
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () {
-              Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Switched to ${controller.text.toUpperCase()} timetable!')),
-              );
-            },
-            child: const Text('Switch'),
-          ),
-        ],
-      ),
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (ctx) => const ClassDiscoveryScreen()),
     );
   }
 

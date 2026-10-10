@@ -20,6 +20,7 @@ class _TimetableGridScreenState extends ConsumerState<TimetableGridScreen> {
   String _selectedBatch = 'All Batches';
 
   final List<Map<String, String>> _daysInfo = [
+    {'day': 'SUNDAY', 'short': 'SUN', 'date': '04'},
     {'day': 'MONDAY', 'short': 'MON', 'date': '05'},
     {'day': 'TUESDAY', 'short': 'TUE', 'date': '06'},
     {'day': 'WEDNESDAY', 'short': 'WED', 'date': '07', 'today': 'true'},
@@ -575,6 +576,71 @@ class _TimetableGridScreenState extends ConsumerState<TimetableGridScreen> {
     bool isEditor,
     String currentDay,
   ) {
+    if (entry.isBreak) {
+      return Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFBF8F5),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppTheme.peachTint),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: const BoxDecoration(
+                color: AppTheme.peachTint,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.local_cafe_rounded, size: 20, color: AppTheme.burntOrange),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${entry.startTime} – ${entry.endTime}',
+                    style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.burntOrange),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    entry.subject,
+                    style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: AppTheme.textStone900),
+                  ),
+                  Text(
+                    'Break / Recess • Campus open',
+                    style: GoogleFonts.inter(fontSize: 11, color: AppTheme.textStone500),
+                  ),
+                ],
+              ),
+            ),
+            if (isEditor) ...[
+              IconButton(
+                icon: const Icon(Icons.edit_outlined, size: 18, color: AppTheme.textStone500),
+                onPressed: () {
+                  AddSlotSheet.show(
+                    context,
+                    currentDay: currentDay,
+                    existing: entry,
+                    onSave: (updated) {
+                      ref.read(timetableEntriesProvider.notifier).updateEntry(updated);
+                    },
+                  );
+                },
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete_outline_rounded, size: 18, color: AppTheme.textStone400),
+                onPressed: () {
+                  ref.read(timetableEntriesProvider.notifier).removeEntry(entry.id);
+                },
+              ),
+            ],
+          ],
+        ),
+      );
+    }
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(

@@ -18,6 +18,7 @@ class LoginScreen extends ConsumerStatefulWidget {
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _isLoading = false;
   bool _showEmailFallback = false;
+  bool _tncAccepted = true;
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
   String? _errorMessage;
@@ -30,6 +31,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _handleGoogleSignIn() async {
+    if (!_tncAccepted) {
+      setState(() => _errorMessage = 'Please accept the Terms & Conditions to proceed.');
+      return;
+    }
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -41,12 +47,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
       if (userCred != null && mounted) {
         final user = userCred.user;
+        await storage.setAgeConfirmed(true);
         ref.read(authProvider.notifier).setUser(
           UserProfile(
             uid: user?.uid ?? 'google-user',
             name: user?.displayName ?? 'Student',
             email: user?.email ?? '',
             photoUrl: user?.photoURL,
+            gender: storage.getUserGender(),
+            institution: storage.getUserInstitution(),
           ),
         );
         widget.onLoginSuccess();
@@ -66,6 +75,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _handleDirectEmailSignIn() async {
+    if (!_tncAccepted) {
+      setState(() => _errorMessage = 'Please accept the Terms & Conditions to proceed.');
+      return;
+    }
+
     final email = _emailController.text.trim();
     final name = _nameController.text.trim();
 
@@ -86,6 +100,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         name: name,
         storage: storage,
       );
+      await storage.setAgeConfirmed(true);
 
       if (mounted) {
         ref.read(authProvider.notifier).setUser(
@@ -93,6 +108,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             uid: storage.getUserId() ?? 'user-1',
             name: storage.getUserName() ?? name,
             email: email,
+            gender: storage.getUserGender(),
+            institution: storage.getUserInstitution(),
           ),
         );
         widget.onLoginSuccess();
@@ -197,8 +214,42 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 16),
                   ],
+
+                  // TnC & DPDP Act Agreement Checkbox
+                  InkWell(
+                    onTap: () => setState(() => _tncAccepted = !_tncAccepted),
+                    borderRadius: BorderRadius.circular(10),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Checkbox(
+                            value: _tncAccepted,
+                            activeColor: AppTheme.burntOrange,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                            onChanged: (val) => setState(() => _tncAccepted = val ?? false),
+                          ),
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 10),
+                              child: Text(
+                                'I confirm I am 18+ and accept the Terms & Conditions and Privacy Policy under DPDP Act 2023.',
+                                style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  color: AppTheme.textStone700,
+                                  height: 1.35,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
 
                   // Google Sign-In Button
                   ElevatedButton(
