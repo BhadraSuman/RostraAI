@@ -191,9 +191,32 @@ class UpdateCheckerService {
             ),
             onPressed: () async {
               Navigator.pop(ctx);
-              final url = Uri.parse(info.downloadUrl);
-              if (await canLaunchUrl(url)) {
-                await launchUrl(url, mode: LaunchMode.externalApplication);
+              final rawUrl = info.downloadUrl.isNotEmpty
+                  ? info.downloadUrl
+                  : 'https://github.com/${AppConstants.githubRepo}/releases/latest';
+              final url = Uri.parse(rawUrl);
+
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Opening browser to download RostraAI update...'),
+                    duration: Duration(seconds: 3),
+                  ),
+                );
+              }
+
+              try {
+                final launched = await launchUrl(url, mode: LaunchMode.externalApplication);
+                if (!launched) {
+                  await launchUrl(url, mode: LaunchMode.platformDefault);
+                }
+              } catch (_) {
+                try {
+                  await launchUrl(url, mode: LaunchMode.platformDefault);
+                } catch (_) {
+                  final fallbackUrl = Uri.parse('https://github.com/${AppConstants.githubRepo}/releases/latest');
+                  await launchUrl(fallbackUrl, mode: LaunchMode.externalApplication);
+                }
               }
             },
             child: Row(
