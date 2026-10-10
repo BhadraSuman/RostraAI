@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "5676201507",
+    "project_id": "rostraai",
+    "storage_bucket": "rostraai.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:5676201507:android:0ce633f01b451a1ca32396",
+        "android_client_info": {
+          "package_name": "com.rostraai.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDVA0eWXP6v06k0TxHrdrAXYeUmafsBJ_A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

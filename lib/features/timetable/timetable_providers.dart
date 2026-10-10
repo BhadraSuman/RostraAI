@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import '../../core/utils/ist_clock.dart';
 import '../../models/timetable_models.dart';
+import '../../services/firestore_sync_service.dart';
 import '../../services/timetable_storage.dart';
 
 final storageProvider = Provider<TimetableStorage>((ref) {
@@ -104,16 +105,25 @@ class TimetableEntriesNotifier extends Notifier<List<TimetableEntry>> {
     );
     state = [...state, newEntry];
     await ref.read(storageProvider).saveEntries(state);
+    _syncToCloud();
   }
 
   Future<void> updateEntry(TimetableEntry updated) async {
     state = state.map((e) => e.id == updated.id ? updated : e).toList();
     await ref.read(storageProvider).saveEntries(state);
+    _syncToCloud();
   }
 
   Future<void> removeEntry(String id) async {
     state = state.where((e) => e.id != id).toList();
     await ref.read(storageProvider).saveEntries(state);
+    _syncToCloud();
+  }
+
+  void _syncToCloud() {
+    final page = ref.read(currentPageProvider);
+    final pageId = page?.id ?? 'demo-class-101';
+    FirestoreSyncService.syncTimetable(pageId: pageId, entries: state);
   }
 
   Future<void> seedSampleSchedule() async {
@@ -271,6 +281,10 @@ class TodayOverrideNotifier extends Notifier<DayOverride?> {
     return ref.watch(storageProvider).getDayOverride(today);
   }
 
+  void updateFromCloud(DayOverride? override) {
+    state = override;
+  }
+
   Future<void> setOverride({
     required bool isNoClasses,
     String? followsWeekday,
@@ -285,6 +299,14 @@ class TodayOverrideNotifier extends Notifier<DayOverride?> {
     );
     await ref.read(storageProvider).saveDayOverride(override);
     state = override;
+
+    // Push to Cloud Firestore for real-time sync with followers
+    final page = ref.read(currentPageProvider);
+    final pageId = page?.id ?? 'demo-class-101';
+    await FirestoreSyncService.syncDayOverride(
+      pageId: pageId,
+      override: override,
+    );
   }
 
   Future<void> clearOverride() async {
@@ -292,6 +314,13 @@ class TodayOverrideNotifier extends Notifier<DayOverride?> {
     final cleared = DayOverride(date: today, isNoClasses: false);
     await ref.read(storageProvider).saveDayOverride(cleared);
     state = null;
+
+    final page = ref.read(currentPageProvider);
+    final pageId = page?.id ?? 'demo-class-101';
+    await FirestoreSyncService.syncDayOverride(
+      pageId: pageId,
+      override: cleared,
+    );
   }
 }
 
@@ -303,6 +332,10 @@ class TodayStatusesNotifier extends Notifier<Map<String, ClassStatus>> {
   Map<String, ClassStatus> build() {
     final today = IstClock.todayDateString();
     return ref.watch(storageProvider).getStatusesForDate(today);
+  }
+
+  void updateAll(Map<String, ClassStatus> statuses) {
+    state = {...state, ...statuses};
   }
 
   Future<void> setStatus({
@@ -328,6 +361,15 @@ class TodayStatusesNotifier extends Notifier<Map<String, ClassStatus>> {
 
     await ref.read(storageProvider).setStatusForEntry(date: today, status: classStatus);
     state = {...state, entryId: classStatus};
+
+    // Push to Cloud Firestore for real-time sync with followers
+    final page = ref.read(currentPageProvider);
+    final pageId = page?.id ?? 'demo-class-101';
+    await FirestoreSyncService.syncStatus(
+      pageId: pageId,
+      date: today,
+      status: classStatus,
+    );
   }
 }
 

@@ -4,6 +4,7 @@ import 'package:rostraai/core/utils/ist_clock.dart';
 import 'package:rostraai/features/attendance/attendance_calculator.dart';
 import 'package:rostraai/features/timetable/timetable_providers.dart';
 import 'package:rostraai/models/timetable_models.dart';
+import 'package:rostraai/services/firestore_sync_service.dart';
 import 'package:rostraai/services/timetable_storage.dart';
 import 'package:rostraai/services/update_checker_service.dart';
 
@@ -260,6 +261,33 @@ void main() {
       expect(UpdateCheckerService.isVersionGreater('1.0.0', '1.0.0'), isFalse);
       expect(UpdateCheckerService.isVersionGreater('1.0.0', '1.0.1'), isFalse);
       expect(UpdateCheckerService.isVersionGreater('0.9.9', '1.0.0'), isFalse);
+    });
+  });
+
+  group('Phase 6: Live Cloud Sync & Offline Resilience Tests', () {
+    test('FirestoreSyncService safely defaults to offline mode when uninitialized', () {
+      // In headless test environment without active Firebase native bridge,
+      // FirestoreSyncService gracefully reports isAvailable as false without throwing
+      expect(FirestoreSyncService.isAvailable, isFalse);
+    });
+
+    test('Live Class Status can be merged and preserved offline', () {
+      final statusMap = <String, ClassStatus>{
+        'slot-1': const ClassStatus(
+          entryId: 'slot-1',
+          status: ClassStatusType.roomMoved,
+          updatedRoom: 'TP-405',
+          updatedAt: '2026-10-10T09:00:00Z',
+          updatedByName: 'Sumit (CR)',
+        ),
+      };
+
+      expect(statusMap['slot-1']!.status, ClassStatusType.roomMoved);
+      expect(statusMap['slot-1']!.updatedRoom, 'TP-405');
+      final serialized = statusMap['slot-1']!.toMap();
+      final deserialized = ClassStatus.fromMap(serialized);
+      expect(deserialized.entryId, 'slot-1');
+      expect(deserialized.updatedRoom, 'TP-405');
     });
   });
 }

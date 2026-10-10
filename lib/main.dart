@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'core/constants/app_constants.dart';
 import 'core/theme/app_theme.dart';
 import 'features/attendance/attendance_screen.dart';
@@ -10,6 +11,8 @@ import 'features/onboarding/role_selection_screen.dart';
 import 'features/timetable/timetable_grid_screen.dart';
 import 'features/timetable/timetable_providers.dart';
 import 'features/today/today_view_screen.dart';
+import 'firebase_options.dart';
+import 'services/firestore_sync_service.dart';
 import 'services/timetable_storage.dart';
 import 'services/update_checker_service.dart';
 
@@ -22,6 +25,16 @@ void main() async {
     FlutterError.presentError(details);
     debugPrint('Flutter Error: ${details.exception}');
   };
+
+  // Safe Firebase Initialization (with offline-first fallback)
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    FirestoreSyncService.initialize();
+  } catch (e) {
+    debugPrint('Firebase initialization note (offline mode fallback): $e');
+  }
 
   final storage = await TimetableStorage.init();
 

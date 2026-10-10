@@ -1,8 +1,12 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/ist_clock.dart';
+import '../../models/timetable_models.dart';
+import '../../services/firestore_sync_service.dart';
 import '../attendance/attendance_calculator.dart';
 import '../navigation/app_sidebar_drawer.dart';
 import '../timetable/timetable_providers.dart';
@@ -21,11 +25,57 @@ final stitchDemoStateProvider = NotifierProvider<StitchDemoStateNotifier, Stitch
   StitchDemoStateNotifier.new,
 );
 
-class TodayViewScreen extends ConsumerWidget {
+class TodayViewScreen extends ConsumerStatefulWidget {
   const TodayViewScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TodayViewScreen> createState() => _TodayViewScreenState();
+}
+
+class _TodayViewScreenState extends ConsumerState<TodayViewScreen> {
+  StreamSubscription? _liveSub;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _bindLiveSync();
+    });
+  }
+
+  void _bindLiveSync() {
+    _liveSub?.cancel();
+    final page = ref.read(currentPageProvider);
+    final pageId = page?.id ?? 'demo-class-101';
+    final today = IstClock.todayDateString();
+    final storage = ref.read(storageProvider);
+
+    _liveSub = FirestoreSyncService.bindLiveListener(
+      pageId: pageId,
+      date: today,
+      storage: storage,
+      onUpdate: (statuses, override) {
+        if (!mounted) return;
+        ref.read(todayStatusesProvider.notifier).updateAll(statuses);
+        ref.read(todayOverrideProvider.notifier).updateFromCloud(override);
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _liveSub?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ref = this.ref;
+    ref.listen<ClassPage?>(currentPageProvider, (prev, next) {
+      if (prev?.id != next?.id) {
+        _bindLiveSync();
+      }
+    });
     final page = ref.watch(currentPageProvider);
     final isEditorReal = ref.watch(isEditorModeProvider);
     final demoState = ref.watch(stitchDemoStateProvider);
@@ -138,6 +188,18 @@ class TodayViewScreen extends ConsumerWidget {
           ],
         ),
         actions: [
+          Tooltip(
+            message: FirestoreSyncService.isAvailable ? 'Cloud Sync: Active (Real-time)' : 'Offline Mode (Local Storage)',
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              padding: const EdgeInsets.all(6),
+              child: Icon(
+                FirestoreSyncService.isAvailable ? Icons.cloud_done_rounded : Icons.cloud_queue_rounded,
+                size: 20,
+                color: FirestoreSyncService.isAvailable ? const Color(0xFF16A34A) : AppTheme.textStone400,
+              ),
+            ),
+          ),
           // Quick Switcher icon to preview any Stitch state (Normal, CR, Day Override, Holiday, Offline, Skeleton)
           PopupMenuButton<StitchDemoState>(
             icon: const Icon(Icons.palette_outlined, size: 20, color: AppTheme.burntOrange),
