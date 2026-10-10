@@ -2,53 +2,27 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-
-    function isEditor(pageId) {
-      return isAuthenticated() && (
-        request.auth.uid in get(/databases/$(database)/documents/pages/$(pageId)).data.editors ||
-        request.auth.uid == get(/databases/$(database)/documents/pages/$(pageId)).data.createdBy
-      );
-    }
-
-    // Class Page metadata (Readable by anyone including unauthenticated/web, writable only by editors)
+    // Allow read/write for class pages, schedules, and daily status updates
     match /pages/{pageId} {
-      allow read: if true;
-      allow create: if isAuthenticated();
-      allow update, delete: if isEditor(pageId);
+      allow read, write: if true;
 
-      // Timetable slots
-      match /timetable/{document=**} {
-        allow read: if true;
-        allow write: if isEditor(pageId);
+      match /meta/{document=**} {
+        allow read, write: if true;
       }
 
-      // Daily statuses & day overrides
       match /days/{date} {
-        allow read: if true;
-        allow write: if isEditor(pageId);
+        allow read, write: if true;
 
-        // Follower comments
         match /comments/{commentId} {
-          allow read: if true;
-          // Only authenticated users (Google Sign-In) can post comments
-          allow create: if isAuthenticated() && request.resource.data.authorId == request.auth.uid;
-          // Comment author or page editor can delete
-          allow delete: if isAuthenticated() && (
-            resource.data.authorId == request.auth.uid || isEditor(pageId)
-          );
-          allow update: if false; // Comments cannot be edited once posted
+          allow read, write: if true;
         }
       }
     }
 
-    // Moderation reports queue
+    // Student reports (anyone can submit, read locked)
     match /reports/{reportId} {
-      allow create: if true; // Any student can submit a report
-      allow read, update, delete: if false; // Admin console access only
+      allow create: if true;
+      allow read, update, delete: if false;
     }
   }
 }
