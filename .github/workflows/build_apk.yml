@@ -38,10 +38,14 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-          cache: true
-
       - name: Get Flutter dependencies
         run: flutter pub get
+
+      - name: Extract and display debug keystore SHA-1 and SHA-256 fingerprints
+        run: |
+          mkdir -p ~/.android
+          keytool -genkey -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US" 2>/dev/null || true
+          keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android || true
 
       - name: Verify code analysis
         run: flutter analyze

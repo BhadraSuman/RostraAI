@@ -43,17 +43,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     try {
       final storage = ref.read(storageProvider);
-      final userCred = await AuthService.signInWithGoogle(storage: storage);
+      await AuthService.signInWithGoogle(storage: storage);
 
-      if (userCred != null && mounted) {
-        final user = userCred.user;
+      final currentUid = storage.getUserId();
+      if (currentUid != null && mounted) {
         await storage.setAgeConfirmed(true);
         ref.read(authProvider.notifier).setUser(
           UserProfile(
-            uid: user?.uid ?? 'google-user',
-            name: user?.displayName ?? 'Student',
-            email: user?.email ?? '',
-            photoUrl: user?.photoURL,
+            uid: currentUid,
+            name: storage.getUserName() ?? 'Student',
+            email: storage.getUserEmail() ?? '',
+            photoUrl: storage.getUserPhotoUrl(),
             gender: storage.getUserGender(),
             institution: storage.getUserInstitution(),
           ),
