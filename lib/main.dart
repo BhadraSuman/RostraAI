@@ -5,6 +5,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'core/constants/app_constants.dart';
 import 'core/theme/app_theme.dart';
 import 'features/attendance/attendance_screen.dart';
+import 'features/auth/auth_provider.dart';
+import 'features/auth/login_screen.dart';
 import 'features/onboarding/age_gate_screen.dart';
 import 'features/onboarding/join_class_screen.dart';
 import 'features/onboarding/role_selection_screen.dart';
@@ -57,6 +59,7 @@ class RostraAIApp extends ConsumerStatefulWidget {
 
 class _RostraAIAppState extends ConsumerState<RostraAIApp> {
   bool _isAgeConfirmed = false;
+  bool _isLoggedIn = false;
   bool _hasSelectedRole = false;
   bool _hasJoinedClass = false;
 
@@ -65,6 +68,7 @@ class _RostraAIAppState extends ConsumerState<RostraAIApp> {
     super.initState();
     final storage = ref.read(storageProvider);
     _isAgeConfirmed = storage.isAgeConfirmed();
+    _isLoggedIn = storage.isLoggedIn();
     _hasSelectedRole = storage.hasSelectedRole();
     _hasJoinedClass = storage.getFollowedPageId() != null;
 
@@ -98,12 +102,25 @@ class _RostraAIAppState extends ConsumerState<RostraAIApp> {
 
   @override
   Widget build(BuildContext context) {
+    // Listen to sign out
+    ref.listen<UserProfile?>(authProvider, (prev, next) {
+      if (next == null && _isLoggedIn) {
+        setState(() => _isLoggedIn = false);
+      }
+    });
+
     Widget activeScreen;
     if (!_isAgeConfirmed) {
       activeScreen = AgeGateScreen(
         onConfirmed: () {
           ref.read(storageProvider).setAgeConfirmed(true);
           setState(() => _isAgeConfirmed = true);
+        },
+      );
+    } else if (!_isLoggedIn) {
+      activeScreen = LoginScreen(
+        onLoginSuccess: () {
+          setState(() => _isLoggedIn = true);
         },
       );
     } else if (!_hasSelectedRole) {
@@ -116,7 +133,7 @@ class _RostraAIAppState extends ConsumerState<RostraAIApp> {
           setState(() => _hasSelectedRole = true);
         },
         onBack: () {
-          setState(() => _isAgeConfirmed = false);
+          setState(() => _isLoggedIn = false);
         },
       );
     } else if (!_hasJoinedClass) {

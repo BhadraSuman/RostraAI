@@ -268,4 +268,42 @@ class TimetableStorage {
     }).toList();
     await saveComments(date: date, entryId: entryId, comments: updated);
   }
+
+  // --- User Authentication Profile ---
+  static const String _keyUserId = 'rostraai_user_uid';
+  static const String _keyUserName = 'rostraai_user_name';
+  static const String _keyUserEmail = 'rostraai_user_email';
+  static const String _keyUserPhotoUrl = 'rostraai_user_photo_url';
+
+  bool isLoggedIn() {
+    return _prefs.getString(_keyUserId) != null;
+  }
+
+  String? getUserId() => _prefs.getString(_keyUserId);
+  String? getUserName() => _prefs.getString(_keyUserName);
+  String? getUserEmail() => _prefs.getString(_keyUserEmail);
+  String? getUserPhotoUrl() => _prefs.getString(_keyUserPhotoUrl);
+
+  Future<void> saveUserProfile({
+    required String uid,
+    required String name,
+    required String email,
+    String? photoUrl,
+  }) async {
+    await _prefs.setString(_keyUserId, uid);
+    await _prefs.setString(_keyUserName, name);
+    await _prefs.setString(_keyUserEmail, email);
+    if (photoUrl != null) {
+      await _prefs.setString(_keyUserPhotoUrl, photoUrl);
+    } else {
+      await _prefs.remove(_keyUserPhotoUrl);
+    }
+  }
+
+  Future<void> clearUserProfile() async {
+    await _prefs.remove(_keyUserId);
+    await _prefs.remove(_keyUserName);
+    await _prefs.remove(_keyUserEmail);
+    await _prefs.remove(_keyUserPhotoUrl);
+  }
 }

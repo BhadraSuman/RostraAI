@@ -290,4 +290,32 @@ void main() {
       expect(deserialized.updatedRoom, 'TP-405');
     });
   });
+
+  group('Authentication & Session Persistence Tests', () {
+    test('Saves and clears user authentication profile in TimetableStorage', () async {
+      SharedPreferences.setMockInitialValues({});
+      final storage = await TimetableStorage.init();
+
+      expect(storage.isLoggedIn(), isFalse);
+      expect(storage.getUserId(), isNull);
+
+      await storage.saveUserProfile(
+        uid: 'user_12345',
+        name: 'Suman Bhadra',
+        email: 'suman@college.edu.in',
+        photoUrl: 'https://example.com/avatar.png',
+      );
+
+      expect(storage.isLoggedIn(), isTrue);
+      expect(storage.getUserId(), 'user_12345');
+      expect(storage.getUserName(), 'Suman Bhadra');
+      expect(storage.getUserEmail(), 'suman@college.edu.in');
+      expect(storage.getUserPhotoUrl(), 'https://example.com/avatar.png');
+
+      await storage.clearUserProfile();
+      expect(storage.isLoggedIn(), isFalse);
+      expect(storage.getUserId(), isNull);
+      expect(storage.getUserName(), isNull);
+    });
+  });
 }

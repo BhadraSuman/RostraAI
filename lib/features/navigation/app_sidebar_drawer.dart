@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_theme.dart';
+import '../auth/auth_provider.dart';
 import '../timetable/timetable_providers.dart';
 import '../../services/update_checker_service.dart';
 
@@ -361,6 +362,48 @@ class AppSidebarDrawer extends ConsumerWidget {
                         }
                       }
                     },
+                  ),
+                  const Divider(color: AppTheme.stoneBorder, height: 16),
+                  _buildSectionHeader('ACCOUNT'),
+                  ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 10),
+                    visualDensity: const VisualDensity(vertical: -2),
+                    dense: true,
+                    leading: CircleAvatar(
+                      radius: 16,
+                      backgroundColor: AppTheme.peachTint,
+                      backgroundImage: storage.getUserPhotoUrl() != null ? NetworkImage(storage.getUserPhotoUrl()!) : null,
+                      child: storage.getUserPhotoUrl() == null
+                          ? Text(
+                              (storage.getUserName() ?? 'S').substring(0, 1).toUpperCase(),
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: AppTheme.burntOrange,
+                              ),
+                            )
+                          : null,
+                    ),
+                    title: Text(
+                      storage.getUserName() ?? 'Student Account',
+                      style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.textStone900),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    subtitle: Text(
+                      storage.getUserEmail() ?? 'Signed in',
+                      style: GoogleFonts.inter(fontSize: 10.5, color: AppTheme.textStone500),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.logout_rounded, size: 18, color: Color(0xFFDC2626)),
+                      tooltip: 'Sign Out',
+                      onPressed: () async {
+                        Navigator.pop(context);
+                        await ref.read(authProvider.notifier).signOut();
+                      },
+                    ),
                   ),
                 ],
               ),
