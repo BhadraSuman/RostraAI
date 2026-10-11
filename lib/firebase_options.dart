@@ -6,10 +6,25 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyDVA0eWXP6v06k0TxHrdrAXYeUmafsBJ_A',
-    appId: '1:5676201507:android:0ce633f01b451a1ca32396',
-    messagingSenderId: '5676201507',
-    projectId: 'rostraai',
-    storageBucket: 'rostraai.firebasestorage.app',
+    apiKey: String.fromEnvironment(
+      'FIREBASE_API_KEY',
+      defaultValue: '',
+    ),
+    appId: String.fromEnvironment(
+      'FIREBASE_APP_ID',
+      defaultValue: '1:5676201507:android:0ce633f01b451a1ca32396',
+    ),
+    messagingSenderId: String.fromEnvironment(
+      'FIREBASE_MESSAGING_SENDER_ID',
+      defaultValue: '5676201507',
+    ),
+    projectId: String.fromEnvironment(
+      'FIREBASE_PROJECT_ID',
+      defaultValue: 'rostraai',
+    ),
+    storageBucket: String.fromEnvironment(
+      'FIREBASE_STORAGE_BUCKET',
+      defaultValue: 'rostraai.firebasestorage.app',
+    ),
   );
 }

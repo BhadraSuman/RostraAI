@@ -29,9 +29,14 @@ void main() async {
 
   // Safe Firebase Initialization (with offline-first fallback)
   try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
+    if (DefaultFirebaseOptions.android.apiKey.isNotEmpty) {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    } else {
+      // On Android, google-services.json automatically provides credentials natively
+      await Firebase.initializeApp();
+    }
     FirestoreSyncService.initialize();
   } catch (e) {
     debugPrint('Firebase initialization note (offline mode fallback): $e');
